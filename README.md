@@ -17,8 +17,9 @@ Of course, you can implement a similar workaround by using `Fusion.New "Frame` a
 All you need to do is...
 
 <div align="center">
-<large>Router.new(Routes) & Router:Push()</large>
+<big>Router.new(Routes) & Router:Push()</big>
 </div>
+<br>
 
 The argument `Routes` is a table of routes with the minimum syntax below:
 
