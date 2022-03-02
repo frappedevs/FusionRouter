@@ -1,7 +1,7 @@
 <div align="center">
 
-![FusionRouter Light](./gh_assets/FusionRouter_Light.png##gh-light-mode-only){width=60%}
-![FusionRouter Dark](./gh_assets/FusionRouter_Light.png##gh-dark-mode-only){width=60%}
+![FusionRouter Light](./gh_assets/FusionRouter_Light.png#gh-light-mode-only)
+![FusionRouter Dark](./gh_assets/FusionRouter_Dark.png#gh-dark-mode-only)
 </div>
 
 # FusionRouter
