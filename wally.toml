@@ -1,0 +1,10 @@
+[package]
+name = "frappedevs/fusionrouter"
+description = "UI Routing for Fusion"
+license = "MIT"
+author = "7kayoh <hello@7kayoh.net>"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
