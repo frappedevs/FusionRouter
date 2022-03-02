@@ -33,18 +33,18 @@ The argument `Routes` is a table of routes with the minimum syntax below:
 
 You can further expand it for your other UI needs, like this...
 ```lua
-	{
-		Path = "/",
-		Meta = {
-			Title = "Verification Center",
-			Subtitle = "Home",
-			Icon = Icons.home,
-		},
-		Component = require(AppViews.Home),
-		OnCleanup = function(route)
-            route.Component:get():Destroy()
-		end,
+{
+	Path = "/",
+	Meta = {
+		Title = "Verification Center",
+		Subtitle = "Home",
+		Icon = Icons.home,
 	},
+	Component = require(AppViews.Home),
+	OnCleanup = function(route)
+    		route.Component:get():Destroy()
+	end,
+},
 ```
 
 In `OnCleanup`, the parameter `route` returns the data for the current route, **the OnCleanup function must always be async**.
