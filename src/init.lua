@@ -1,4 +1,7 @@
-local Fusion = require(script.Fusion)
+local ReplicatedFirst = game:GetService("ReplicatedFirst")
+
+local Alias = require(ReplicatedFirst.Core.Alias)
+local Fusion = require(Alias.Fusion)
 
 local ROUTER_BASE_PATH = "/"
 
@@ -20,7 +23,9 @@ function Router:Push(path, withData)
         if path:lower() == route.Path:lower() then
             self.CurrentRoute.OnCleanup:get()(self.CurrentRoute)
             UpdateStatesRecursively(route, self.CurrentRoute)
-            self.CurrentRoute.Data = withData or {}
+            withData = withData or {}
+            withData.Router = self
+            self.CurrentRoute.Data = withData
         end
     end
 end
@@ -54,8 +59,12 @@ function Router.new(routes)
 
     for _, route in ipairs(self.Routes) do
         if route.Path == ROUTER_BASE_PATH and not self.CurrentRoute then
-            self.CurrentRoute = {}
-            Router:_initializeStates(route, self.CurrentRoute)
+            self.CurrentRoute = {
+                Data = {
+                    Router = self,
+                },
+            }
+            self:_initializeStates(route, self.CurrentRoute)
             break
         end
     end
