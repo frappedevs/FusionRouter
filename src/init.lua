@@ -18,53 +18,69 @@ function UpdateStatesRecursively(route, tabl)
 	end
 end
 
-function Router:Push(path, withData)
-    for _, route in ipairs(self.Routes) do
-        if path:lower() == route.Path:lower() then
-            self.CurrentRoute.OnCleanup:get()(self.CurrentRoute)
-            UpdateStatesRecursively(route, self.CurrentRoute)
-            withData = withData or {}
-            withData.Router = self
-            self.CurrentRoute.Data = withData
-        end
-    end
-end
-
-function Router:GetView()
-    return Fusion.New("Frame"){
-        BackgroundTransparency = 1,
-        Size = UDim2.new(1, 0, 1, 0),
-
-        [Fusion.Children] = Fusion.Computed(function()
-           return self.CurrentRoute.Component:get()(self.CurrentRoute.Data)
-        end),
-    }
-end
-
-function Router:_initializeStates(route, tabl)
+function InitializeStates(route, tabl)
     for key, data in pairs(route) do
         if typeof(data) == "table" then
             tabl[key] = {}
-            Router:_initializeStates(data, tabl[key])
+            InitializeStates(data, tabl[key])
         elseif key ~= "Data" then
             tabl[key] = Fusion.Value(data)
         end
     end
 end
 
+function Router:_update()
+    for _, routerView in ipairs(self._routerViews) do
+        routerView.Children:get():Destroy()
+        if routerView.Component then
+            routerView.Children:set(self.Current.View:get()(self.Current.Data))
+        end
+    end
+end
+
+function Router:Push(path, withData)
+    for _, route in ipairs(self.Routes) do
+        if path:lower() == route.Path:lower() then
+            UpdateStatesRecursively(route, self.Current)
+            withData = withData or {}
+            withData.Router = self
+            self.Current.Data = withData
+            self:_update()
+            break
+        end
+    end
+end
+
+function Router:GetView()
+    local children = Fusion.Value(self.Current.View:get()(self.Current.Data))
+    local routerView = Fusion.New("Frame"){
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 1, 0),
+        [Fusion.Children] = children
+    }
+
+    table.insert(self._routerViews, {
+        Component = routerView,
+        Children = children,
+    })
+
+    return RouterView
+end
+
 function Router.new(routes)
     local self = setmetatable({
         Routes = routes,
+        Current = {
+            Data = {
+                Router = self,
+            },
+        },
+        _routerViews = {},
     }, Router)
 
     for _, route in ipairs(self.Routes) do
-        if route.Path == ROUTER_BASE_PATH and not self.CurrentRoute then
-            self.CurrentRoute = {
-                Data = {
-                    Router = self,
-                },
-            }
-            self:_initializeStates(route, self.CurrentRoute)
+        if route.Path == ROUTER_BASE_PATH then
+            self:_initializeStates(route, self.Current)
             break
         end
     end
