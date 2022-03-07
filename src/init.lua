@@ -29,7 +29,10 @@ function InitializeStates(route, tabl)
     end
 end
 
-function Router:_update()
+function Router:_update(withData: {[any]: any}?)
+    self.Current.Data = withData or {}
+    self.Current.Data.Router = self
+
     for _, routerView in ipairs(self._routerViews) do
         routerView.Children:get():Destroy()
         if routerView.Component then
@@ -38,13 +41,10 @@ function Router:_update()
     end
 end
 
-function Router:Push(path, withData)
+function Router:Push(path: string, withData: {[any]: any}?)
     for _, route in ipairs(self.Routes) do
         if path:lower() == route.Path:lower() then
             UpdateStatesRecursively(route, self.Current)
-            withData = withData or {}
-            withData.Router = self
-            self.Current.Data = withData
             self:_update()
             break
         end
@@ -70,17 +70,13 @@ end
 function Router.new(routes)
     local self = setmetatable({
         Routes = routes,
-        Current = {
-            Data = {
-                Router = self,
-            },
-        },
         _routerViews = {},
     }, Router)
 
     for _, route in ipairs(self.Routes) do
         if route.Path == ROUTER_BASE_PATH then
             self:_initializeStates(route, self.Current)
+            self:_update()
             break
         end
     end
