@@ -13,9 +13,10 @@ type Routes = {
 function _populateStates(self, tabl)
 	for key, data in pairs(tabl) do
 		if typeof(data) == "table" then
-			_populateStates(data, self[key])
+			self[key] = self[key] or {}
+			_populateStates(self[key], data)
 		elseif key ~= "Data" then
-			self[key] = self[key] and self[key]:set(data) or Fusion.Value(data)
+			self[key] = (self[key] and self[key].set) and self[key]:set(data) or Fusion.Value(data)
 		end
 	end
 end
@@ -74,15 +75,16 @@ end
 
 function Router.new(routes: Routes)
 	local self = setmetatable({
+        Current = {},
 		Routes = routes,
 		_routerViews = {},
 	}, Router)
 
 	_checkRoute(routes)
 
-	for _, route in ipairs(self.Routes) do
+	for index, route in pairs(self.Routes) do
 		if route.Path == self.ROUTER_BASE_PATH then
-			_populateStates(self, route)
+			_populateStates(self.Current, route)
 			self:_update()
 			break
 		end
