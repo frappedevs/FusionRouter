@@ -3,9 +3,16 @@ local Fusion = require(script.Fusion)
 local Router = { ROUTER_BASE_PATH = "/" }
 Router.__index = Router
 
+type Routes = {
+	Path: string,
+	View: ({ [any]: any }) -> any,
+	Meta: { [any]: any },
+	[any]: any,
+}
+
 function _populateStates(self, tabl)
 	for key, data in pairs(tabl) do
-        if typeof(data) == "table" then
+		if typeof(data) == "table" then
 			_populateStates(data, self[key])
 		elseif key ~= "Data" then
 			self[key] = self[key] and self[key]:set(data) or Fusion.Value(data)
@@ -13,7 +20,7 @@ function _populateStates(self, tabl)
 	end
 end
 
-function _checkRoute(routes)
+function _checkRoute(routes: Routes)
 	local seen = {}
 
 	for _, data in ipairs(routes) do
@@ -65,7 +72,7 @@ function Router:GetView()
 	return routerView
 end
 
-function Router.new(routes)
+function Router.new(routes: Routes)
 	local self = setmetatable({
 		Routes = routes,
 		_routerViews = {},
