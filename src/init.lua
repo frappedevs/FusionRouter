@@ -1,87 +1,87 @@
-local ReplicatedFirst = game:GetService("ReplicatedFirst")
+local Fusion = require(script.Fusion)
 
-local Alias = require(ReplicatedFirst.Core.Alias)
-local Fusion = require(Alias.Fusion)
-
-local ROUTER_BASE_PATH = "/"
-
-local Router = {}
+local Router = { ROUTER_BASE_PATH = "/" }
 Router.__index = Router
 
-function UpdateStatesRecursively(route, tabl)
-	for key, data in pairs(route) do
-		if typeof(data) == "table" then
-			UpdateStatesRecursively(data, tabl[key])
-        elseif key ~= "Data" then
-			tabl[key]:set(data)
+function _populateStates(self, tabl)
+	for key, data in pairs(tabl) do
+        if typeof(data) == "table" then
+			_populateStates(data, self[key])
+		elseif key ~= "Data" then
+			self[key] = self[key] and self[key]:set(data) or Fusion.Value(data)
 		end
 	end
 end
 
-function InitializeStates(route, tabl)
-    for key, data in pairs(route) do
-        if typeof(data) == "table" then
-            tabl[key] = {}
-            InitializeStates(data, tabl[key])
-        elseif key ~= "Data" then
-            tabl[key] = Fusion.Value(data)
-        end
-    end
+function _checkRoute(routes)
+	local seen = {}
+
+	for _, data in ipairs(routes) do
+		assert(data.Path and data.View, ("%s is required"):format(not data.Path and "Path" or "View"))
+		if seen[data.Path] then
+			error("This path already exists: " .. data.Path)
+		end
+		seen[data.Path] = true
+	end
 end
 
-function Router:_update(withData: {[any]: any}?)
-    self.Current.Data = withData or {}
-    self.Current.Data.Router = self
+function Router:_update(withData: { [any]: any }?)
+	self.Current.Data = withData or {}
+	self.Current.Data.Router = self
 
-    for _, routerView in ipairs(self._routerViews) do
-        routerView.Children:get():Destroy()
-        if routerView.Component then
-            routerView.Children:set(self.Current.View:get()(self.Current.Data))
-        end
-    end
+	for index, routerView in ipairs(self._routerViews) do
+		routerView.Children:get():Destroy()
+		if routerView.Component then
+			routerView.Children:set(self.Current.View:get()(self.Current.Data))
+		else
+			table.remove(self._routerViews, index)
+		end
+	end
 end
 
-function Router:Push(path: string, withData: {[any]: any}?)
-    for _, route in ipairs(self.Routes) do
-        if path:lower() == route.Path:lower() then
-            UpdateStatesRecursively(route, self.Current)
-            self:_update()
-            break
-        end
-    end
+function Router:Push(path: string, withData: { [any]: any }?)
+	for _, route in ipairs(self.Routes) do
+		if path:lower() == route.Path:lower() then
+			_populateStates(self.Current, route)
+			self:_update(withData)
+			break
+		end
+	end
 end
 
 function Router:GetView()
-    local children = Fusion.Value(self.Current.View:get()(self.Current.Data))
-    local routerView = Fusion.New("Frame"){
-        BackgroundTransparency = 1,
-        Size = UDim2.new(1, 0, 1, 0),
-        [Fusion.Children] = children
-    }
+	local children = Fusion.Value(self.Current.View:get()(self.Current.Data))
+	local routerView = Fusion.New("Frame")({
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 1, 0),
+		[Fusion.Children] = children,
+	})
 
-    table.insert(self._routerViews, {
-        Component = routerView,
-        Children = children,
-    })
+	table.insert(self._routerViews, {
+		Component = routerView,
+		Children = children,
+	})
 
-    return RouterView
+	return routerView
 end
 
 function Router.new(routes)
-    local self = setmetatable({
-        Routes = routes,
-        _routerViews = {},
-    }, Router)
+	local self = setmetatable({
+		Routes = routes,
+		_routerViews = {},
+	}, Router)
 
-    for _, route in ipairs(self.Routes) do
-        if route.Path == ROUTER_BASE_PATH then
-            self:_initializeStates(route, self.Current)
-            self:_update()
-            break
-        end
-    end
+	_checkRoute(routes)
 
-    return self
+	for _, route in ipairs(self.Routes) do
+		if route.Path == self.ROUTER_BASE_PATH then
+			_populateStates(self, route)
+			self:_update()
+			break
+		end
+	end
+
+	return self
 end
 
 return Router
