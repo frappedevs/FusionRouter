@@ -1,16 +1,14 @@
 <div align="center">
 
+![FusionRouter Light](./gh_assets/FusionRouter_Light.png#gh-light-mode-only)
+![FusionRouter Dark](./gh_assets/FusionRouter_Dark.png#gh-dark-mode-only)
 </div>
 
 # FusionRouter
-UI Routing in Fusion, done with `Fusion.Value`
+FusionRouter is a UI Routing library designed to be used with Fusion, the declarative UI library made by Elttob. It is implemented with references of VueRouter, how routes are defined are very similar to how you do it in VueJS.
 
-:warning: Work In Progress! Features are incomplete and bugs may occur.
+In a nutshell, FusionRouter is basically `[Children] = PageState` and `PageState:set(newPage)`, but with more powerful utilities to make UI routing less painful and reduce more boilerplate codes. The `Meta` field allows you to use data that is not exclusive to one page, such as page name, page description, et cetera.
 
-If you came from web development (React, Vue, Svelte, et cetera). You definitely know **Routers**. That's basically what FusionRouter does! Except paths are just an identier rather than an actual URI, and there is no need for a server to serve the Views.
-
-Of course, you can implement a similar workaround by using `Fusion.New "Frame` and `Fusion.Value` only, but without lifecycles method, it's really hard to clean the current view completely for GC purposes.
-
-## Documentation
+If you are from VueJS, you can easily recreate the similar working experience in Fusion with the use of FusionRouter. Everything is designed to be simple and one-liner, so you can create UI in an even faster pace.
 ## License
 FusionRouter is licensed under the MIT license.
