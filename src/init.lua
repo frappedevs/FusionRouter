@@ -1,3 +1,6 @@
+--- @class Router
+--- UI routing class for Fusion
+
 local Fusion = require(script.Fusion)
 
 local Router = { ROUTER_BASE_PATH = "/" }
@@ -33,6 +36,11 @@ function _checkRoute(routes: Routes)
 	end
 end
 
+
+---	Updates the Router class to all RouterViews
+---	@within Router
+---	@param withData { [any]: any }? -- Any extra data to send to the route's view
+
 function Router:_update(withData: { [any]: any }?)
 	self.Current.Data = withData or {}
 	self.Current.Data.Router = self
@@ -48,6 +56,11 @@ function Router:_update(withData: { [any]: any }?)
 	end
 end
 
+
+---	Pushes the new route to the stack. All RouterViews will be automatically updated
+---	@within Router
+---	@param path string -- The route's path
+---	@param withData { [any]: any }? -- Any extra data to send to the route's view
 function Router:Push(path: string, withData: { [any]: any }?)
 	for _, route in ipairs(self.Routes) do
 		if path:lower() == route.Path:lower() then
@@ -58,6 +71,11 @@ function Router:Push(path: string, withData: { [any]: any }?)
 	end
 end
 
+
+---	Generates and returns a new RouterView component binded to the current Router class
+---	@within Router
+---	@param lifecycle (event: string) -> ()? -- A function to call when a lifecycle reaches
+---	@return [Frame] -- Returns the RouterView component
 function Router:GetView(lifecycle: (string) -> ()?)
 	local children = Fusion.Value(self.Current.View:get()(self.Current.Data))
 	local routerView = Fusion.New("Frame")({
@@ -75,9 +93,19 @@ function Router:GetView(lifecycle: (string) -> ()?)
 	return routerView
 end
 
+--[=[
+	Creates a new Router class.
+
+	Each route must have at least 3 fields, `Path`, `View`, and `Meta`. The `path` field represents the identifier for the route, duplicated path should never exist as it will break the functionality of the Router. The `View` field is a function that will be called when [Router:Push()] is called with the corresponding path, it should return a [Instance]. The `Meta` field is a table that can be used to store any global data that can be used outside of RouterView. It should not be used to store any data that is specific to the route, for that, send data in the `withData` parameter in the [Router:Push()] function.
+
+
+	You can add other kind of data, the Data field is reserved for route-specific data and is not stateful by default.
+	@param routes { Path: string, View: ({ [any]: any }) -> any, Meta: { [any]: any }, [any]: any } -- The routes to add
+	@return Router -- Returns the new Router class
+]=]
 function Router.new(routes: Routes)
 	local self = setmetatable({
-        Current = {},
+		Current = {},
 		Routes = routes,
 		_routerViews = {},
 	}, Router)
