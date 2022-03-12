@@ -1,0 +1,38 @@
+title = "FusionRouter"  # From Git
+gitRepoUrl = "https://github.com/frappedevs/FusionRouter" # From Git
+
+gitSourceBranch = "main"
+changelog = true
+
+[docusaurus]
+onBrokenLinks = "throw"
+onBrokenMarkdownLinks = "warn"
+favicon = "/favicon.png"
+
+# From git:
+organizationName = "Frappé Development"
+projectName = "FusionRouter"
+url = "https://docs.frappe.site"
+baseUrl = "/FusionRouter/"
+tagline = "Powerful UI Routing in Fusion"
+
+[footer]
+style = "dark"
+copyright = "Copyright © 2022 Frappé Development. Built with Moonwave and Docusaurus"
+
+[home]
+enabled = true
+includeReadme = false
+
+[[home.features]]
+title = "Write maintainable UI code"
+description = "Reduce clutter and confusing navigations by turning your UI into a collection of pages. Make navigation less explicit and more intuitive with just one line."
+
+[[home.features]]
+title = "Reduce boilerplate code"
+description = "Turn UI components that exist in every page into a layout, making it less stressful to make changes to the same component for each UI. As well as making UI more easier to adapt to each kind of device."
+
+[[home.features]]
+title = "Lightweight in code & design"
+description = "FusionRouter is implemented within 100 lines of code with the use of `Fusion.Value`."
+
