@@ -40,6 +40,7 @@ function Router:_update(withData: { [any]: any }?)
 	for index, routerView in ipairs(self._routerViews) do
 		routerView.Children:get():Destroy()
 		if routerView.Component then
+			routerView.Lifecycle("PageSwitch")
 			routerView.Children:set(self.Current.View:get()(self.Current.Data))
 		else
 			table.remove(self._routerViews, index)
@@ -57,7 +58,7 @@ function Router:Push(path: string, withData: { [any]: any }?)
 	end
 end
 
-function Router:GetView()
+function Router:GetView(lifecycle: (string) -> ()?)
 	local children = Fusion.Value(self.Current.View:get()(self.Current.Data))
 	local routerView = Fusion.New("Frame")({
 		BackgroundTransparency = 1,
@@ -68,6 +69,7 @@ function Router:GetView()
 	table.insert(self._routerViews, {
 		Component = routerView,
 		Children = children,
+		Lifecycle = lifecycle or function () end,
 	})
 
 	return routerView
@@ -82,7 +84,7 @@ function Router.new(routes: Routes)
 
 	_checkRoute(routes)
 
-	for index, route in pairs(self.Routes) do
+	for _, route in pairs(self.Routes) do
 		if route.Path == self.ROUTER_BASE_PATH then
 			_populateStates(self.Current, route)
 			self:_update()
