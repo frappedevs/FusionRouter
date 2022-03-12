@@ -48,10 +48,11 @@ function Router:_update(withData: { [any]: any }?)
 	self.Current.Data.Router = self
 
 	for index, routerView in ipairs(self._routerViews) do
-		routerView.Children:get():Destroy()
 		if routerView.Component then
 			routerView.Lifecycle("PageSwitch")
+			routerView.Children:get():Destroy()
 			routerView.Children:set(self.Current.View:get()(self.Current.Data))
+			routerView.Lifecycle("PageSwitchEnded")
 		else
 			table.remove(self._routerViews, index)
 		end
