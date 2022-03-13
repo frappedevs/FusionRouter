@@ -5,7 +5,7 @@
 
 local Fusion = require(script.Fusion)
 
-local Router = { ROUTER_BASE_PATH = "/" }
+local Router = { ROUTER_BASE_PATH = "/", URL_SEPARATOR = "/" }
 Router.__index = Router
 
 type Routes = {
@@ -38,6 +38,30 @@ function _checkRoute(routes: Routes)
 	end
 end
 
+function _checkURL(originalPath: string, path: string): (boolean, {string?})
+	local originalSplit = originalPath:lower():split(Router.URL_SEPARATOR)
+	local split = path:lower():split(Router.URL_SEPARATOR)
+	local slugs = {}
+	
+	table.remove(originalSplit, 1)
+	table.remove(split, 1)
+
+	if #originalSplit < #split then
+		return false, {}
+	end
+
+	for index, token in pairs(originalSplit) do
+		local isSlug = token:match("^:") and token:match(":$")
+		if isSlug then
+			slugs[token:sub(2, -2)] = split[index] or ""
+		elseif not isSlug and split[index] ~= token then
+			return false, {}
+		end
+	end
+
+	return true, slugs
+end
+
 --[=[
 	Updates the Router class to all RouterViews
 	@within Router
@@ -67,8 +91,10 @@ end
 --]=]
 function Router:Push(path: string, withData: { [any]: any }?)
 	for _, route in ipairs(self.Routes) do
-		if path:lower() == route.Path:lower() then
+		local isSame, slugs = _checkURL(route.Path, path)
+		if isSame then
 			_populateStates(self.Current, route)
+			withData.Slugs = slugs
 			self:_update(withData)
 			break
 		end
