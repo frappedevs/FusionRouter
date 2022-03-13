@@ -50,7 +50,7 @@ function _checkURL(originalPath: string, path: string): (boolean, {string?})
 		return false, {}
 	end
 
-	for index, token in pairs(originalSplit) do
+	for index, token in ipairs(originalSplit) do
 		local isSlug = token:match("^:") and token:match(":$")
 		if isSlug then
 			slugs[token:sub(2, -2)] = split[index] or ""
