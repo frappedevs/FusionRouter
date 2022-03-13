@@ -38,11 +38,11 @@ function _checkRoute(routes: Routes)
 	end
 end
 
-function _checkURL(originalPath: string, path: string): (boolean, {string?})
+function _checkURL(originalPath: string, path: string): (boolean, { string? })
 	local originalSplit = originalPath:lower():split(Router.URL_SEPARATOR)
 	local split = path:lower():split(Router.URL_SEPARATOR)
 	local slugs = {}
-	
+
 	table.remove(originalSplit, 1)
 	table.remove(split, 1)
 
