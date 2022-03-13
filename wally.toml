@@ -3,7 +3,7 @@ name = "frappedevs/fusionrouter"
 description = "UI Routing for Fusion"
 license = "MIT"
 author = "7kayoh <hello@7kayoh.net>"
-version = "0.1.0"
+version = "0.1.5"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 
