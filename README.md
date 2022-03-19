@@ -20,5 +20,8 @@ To install by using Wally, simply add `7kayoh/fusionrouter` into your `toml` fil
 ### Why not `frappedevs/fusionrouter`?
 We would love to publish to the scope `frappedevs`, but we do not have permission to do that in the Wally index nor had a response from the team regarding this problem. 😞
 
+## Community
+[Discord](https://discord.gg/JSHRQkrafN)
+
 ## License
 FusionRouter is licensed under the MIT license.
