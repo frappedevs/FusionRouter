@@ -21,7 +21,11 @@ function _populateStates(self, tabl)
 			self[key] = self[key] or {}
 			_populateStates(self[key], data)
 		elseif key ~= "Data" then
-			self[key] = (self[key] and self[key].set) and self[key]:set(data) or Fusion.Value(data)
+			if self[key] and self[key].set then
+				self[key]:set(data)
+			else
+				self[key] = Fusion.Value(data)
+			end
 		end
 	end
 end
@@ -42,7 +46,6 @@ function _checkURL(originalPath: string, path: string): (boolean, { string? })
 	local originalSplit = originalPath:lower():split(Router.URL_SEPARATOR)
 	local split = path:lower():split(Router.URL_SEPARATOR)
 	local slugs = {}
-
 	table.remove(originalSplit, 1)
 	table.remove(split, 1)
 
