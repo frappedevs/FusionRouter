@@ -32,9 +32,11 @@ end
 
 function _checkRoute(routes: Routes)
 	local seen = {}
-
 	for _, data in ipairs(routes) do
 		assert(data.Path and data.View, ("%s is required"):format(not data.Path and "Path" or "View"))
+		if data.path:sub(-1) ~= "/" then
+			data.path ..= "/"
+		end
 		if seen[data.Path] then
 			error("This path already exists: " .. data.Path)
 		end
@@ -43,16 +45,17 @@ function _checkRoute(routes: Routes)
 end
 
 function _checkURL(originalPath: string, path: string): (boolean, { string? })
+	if path:sub(-1) ~= "/" then
+		path ..= "/"
+	end
 	local originalSplit = originalPath:lower():split(Router.URL_SEPARATOR)
 	local split = path:lower():split(Router.URL_SEPARATOR)
 	local slugs = {}
 	table.remove(originalSplit, 1)
 	table.remove(split, 1)
-
 	if #originalSplit < #split then
 		return false, {}
 	end
-
 	for index, token in ipairs(originalSplit) do
 		local isSlug = token:match("^:") and token:match(":$")
 		if isSlug then
@@ -73,7 +76,6 @@ end
 function Router:_update(withData: { [any]: any }?)
 	self.Current.Data = withData or {}
 	self.Current.Data.Router = self
-
 	for index, routerView in ipairs(self._routerViews) do
 		if routerView.Component then
 			routerView.Lifecycle("PageSwitch")
@@ -117,7 +119,6 @@ function Router:GetView(lifecycle: (string) -> ()?)
 		Size = UDim2.new(1, 0, 1, 0),
 		[Fusion.Children] = children,
 	})
-
 	table.insert(self._routerViews, {
 		Component = routerView,
 		Children = children,
@@ -147,9 +148,7 @@ function Router.new(routes: Routes)
 		Routes = routes,
 		_routerViews = {},
 	}, Router)
-
 	_checkRoute(routes)
-
 	for _, route in pairs(self.Routes) do
 		if route.Path == self.ROUTER_BASE_PATH then
 			_populateStates(self.Current, route)
