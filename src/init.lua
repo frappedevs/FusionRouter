@@ -15,11 +15,11 @@ type Routes = {
 	[any]: any,
 }
 
-function _populateStates(self, tabl)
+function populateStates(self, tabl)
 	for key, data in pairs(tabl) do
 		if typeof(data) == "table" then
 			self[key] = self[key] or {}
-			_populateStates(self[key], data)
+			populateStates(self[key], data)
 		elseif key ~= "Data" then
 			if self[key] and self[key].set then
 				self[key]:set(data)
@@ -30,12 +30,20 @@ function _populateStates(self, tabl)
 	end
 end
 
-function _checkRoute(routes: Routes)
+function purify(tabl)
+	for key, value in ipairs(tabl) do
+		if value == "" or value == " " then
+			table.remove(tabl, key)
+		end
+	end
+end
+
+function checkRoute(routes: Routes)
 	local seen = {}
 	for _, data in ipairs(routes) do
 		assert(data.Path and data.View, ("%s is required"):format(not data.Path and "Path" or "View"))
-		if data.path:sub(-1) ~= "/" then
-			data.path ..= "/"
+		if data.Path:sub(-1) ~= "/" then
+			data.Path ..= "/"
 		end
 		if seen[data.Path] then
 			error("This path already exists: " .. data.Path)
@@ -44,18 +52,18 @@ function _checkRoute(routes: Routes)
 	end
 end
 
-function _checkURL(originalPath: string, path: string): (boolean, { string? })
+function checkURL(originalPath: string, path: string): (boolean, { string? })
 	if path:sub(-1) ~= "/" then
 		path ..= "/"
 	end
-	local originalSplit = originalPath:lower():split(Router.URL_SEPARATOR)
-	local split = path:lower():split(Router.URL_SEPARATOR)
+
+	local originalSplit = purify(originalPath:lower():split(Router.URL_SEPARATOR))
+	local split = purify(path:lower():split(Router.URL_SEPARATOR))
 	local slugs = {}
-	table.remove(originalSplit, 1)
-	table.remove(split, 1)
 	if #originalSplit < #split then
 		return false, {}
 	end
+
 	for index, token in ipairs(originalSplit) do
 		local isSlug = token:match("^:") and token:match(":$")
 		if isSlug then
@@ -95,10 +103,11 @@ end
 	@param withData { [any]: any }? -- Any extra data to send to the route's view
 --]=]
 function Router:Push(path: string, withData: { [any]: any }?)
+	withData = withData or {}
 	for _, route in ipairs(self.Routes) do
-		local isSame, slugs = _checkURL(route.Path, path)
+		local isSame, slugs = checkURL(route.Path, path)
 		if isSame then
-			_populateStates(self.Current, route)
+			populateStates(self.Current, route)
 			withData.Slugs = slugs
 			self:_update(withData)
 			break
@@ -148,11 +157,10 @@ function Router.new(routes: Routes)
 		Routes = routes,
 		_routerViews = {},
 	}, Router)
-	_checkRoute(routes)
+	checkRoute(routes)
 	for _, route in pairs(self.Routes) do
 		if route.Path == self.ROUTER_BASE_PATH then
-			_populateStates(self.Current, route)
-			self:_update()
+			self:Push(route.Path)
 			break
 		end
 	end
