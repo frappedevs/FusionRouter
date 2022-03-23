@@ -36,6 +36,8 @@ function purify(tabl)
 			table.remove(tabl, key)
 		end
 	end
+
+	return tabl
 end
 
 function checkRoute(routes: Routes)
@@ -57,8 +59,8 @@ function checkURL(originalPath: string, path: string): (boolean, { string? })
 		path ..= "/"
 	end
 
-	local originalSplit = purify(originalPath:lower():split(Router.URL_SEPARATOR))
-	local split = purify(path:lower():split(Router.URL_SEPARATOR))
+	local originalSplit = purify(originalPath:lower():split(Router.URL_SEPARATOR) or {})
+	local split = purify(path:lower():split(Router.URL_SEPARATOR) or {})
 	local slugs = {}
 	if #originalSplit < #split then
 		return false, {}
