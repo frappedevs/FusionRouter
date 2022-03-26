@@ -1,8 +1,4 @@
-<div align="center">
-
-![FusionRouter Light](./gh_assets/FusionRouter_Light.png#gh-light-mode-only)
-![FusionRouter Dark](./gh_assets/FusionRouter_Dark.png#gh-dark-mode-only)
-</div>
+![Router](https://user-images.githubusercontent.com/40730127/160247379-752ca428-61c2-40da-b83c-66beb7ec2f4a.png)
 
 # FusionRouter
 FusionRouter is a UI Routing library designed to be used with Fusion, the declarative UI library made by Elttob. It is implemented with references of VueRouter, how routes are defined are very similar to how you do it in VueJS.
