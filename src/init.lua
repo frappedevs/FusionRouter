@@ -11,7 +11,6 @@ Router.__index = Router
 type Routes = {
 	Path: string,
 	View: ({ [any]: any }) -> any,
-	Meta: { [any]: any },
 	[any]: any,
 }
 
@@ -142,18 +141,16 @@ end
 --[=[
 	Creates a new Router class.
 
-	Each route must have at least 3 fields, `Path`, `View`, and `Meta`.
+	Each route must have at least 2 fields, `Path` and `View`
 	The `path` field represents the identifier for the route, duplicated path should never exist as it will break the
 	functionality of the Router. The `View` field is a function that will be called when [Router:Push()] is called with
-	the corresponding path, it should return a [Instance]. The `Meta` field is a table that can be used to store any
-	global data that can be used outside of RouterView. It should not be used to store any data that is specific to the
-	route, for that, send data in the `withData` parameter in the [Router:Push()] function.
+	the corresponding path, it should return a [Instance].
 
 	You can add other kind of data, the Data field is reserved for route-specific data and is not stateful by default.
-	@param routes { Path: string, View: ({ [any]: any }) -> any, Meta: { [any]: any }, [any]: any } -- The routes to add
+	@param {routes} { Path: string, View: ({ [any]: any }) -> any, [any]: any } -- The routes to add
 	@return Router -- Returns the new Router class
 ]=]
-function Router.new(routes: Routes)
+function Router.new(routes: {Routes})
 	local self = setmetatable({
 		Current = {},
 		Routes = routes,
