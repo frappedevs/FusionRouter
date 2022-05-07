@@ -1,6 +1,9 @@
 ![Router](https://user-images.githubusercontent.com/40730127/160251857-1329b88d-236b-4166-954b-2345a8700d97.png)
 
 # FusionRouter
+
+[![Join the chat at https://gitter.im/frappedevs/fusionrouter](https://badges.gitter.im/frappedevs/fusionrouter.svg)](https://gitter.im/frappedevs/fusionrouter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 FusionRouter is a UI Routing library designed to be used with Fusion, the declarative UI library made by Elttob. It is implemented with references of VueRouter, how routes are defined are very similar to how you do it in VueJS.
 
 In a nutshell, FusionRouter is basically `[Children] = PageState` and `PageState:set(newPage)`, but with more powerful utilities to make UI routing less painful and reduce more boilerplate codes. The `Meta` field allows you to use data that is not exclusive to one page, such as page name, page description, et cetera.
