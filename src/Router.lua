@@ -23,6 +23,7 @@ function Router.new(routes: Types.Routes)
 
 	local self = setmetatable({}, Router)
 	self.Routes = Tree(routeIndices["/"])
+    self.History = {}
 	routeIndices["/"] = nil
 	self.CurrentPage = {}
 	for _, route in pairs(routeIndices) do

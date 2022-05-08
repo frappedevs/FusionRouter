@@ -29,6 +29,7 @@ export type Router = {
         },
         [any]: any,
     },
+    History: { Route<string> },
     Routes: {
         [string]: TreeChild<Route<string>>,
     },
