@@ -62,6 +62,10 @@ end
 
 function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any }) end
 
+function Router:canGoBack(steps: number?): boolean
+    return #self.History > (steps or 1)
+end
+
 function Router:push(path: string, parameters: { [any]: any }?)
 	local function resolve(path: string, node: Types.TreeChild<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = Parse(path)
