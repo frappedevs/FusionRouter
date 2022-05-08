@@ -25,10 +25,15 @@ function Router.new(routes: Types.Routes)
 	self.Routes = Tree(routeIndices["/"])
     self.History = {}
 	routeIndices["/"] = nil
-	self.CurrentPage = {}
+	self.CurrentPage = {
+        Path = Fusion.Value(""),
+        Page = Fusion.Value(function(props) return Fusion.new "Frame" {} end),
+        Data = StateDict.new({}),
+    }
 	for _, route in pairs(routeIndices) do
 		self:addRoute(route)
 	end
+    self:push("/")
 
 	return self
 end
