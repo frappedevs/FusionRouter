@@ -57,6 +57,25 @@ function Router:addRoute(route: Types.Route<string>)
     resolve(route.Path, self.Routes)
 end
 
+function Router:push(path: string, parameters: { [any]: any }?)
+	local function resolve(path: string, node: Types.TreeChild<Types.Route<string> | { ParameterName: string? }>)
+		local current, rest = Parse(path)
+		local currentNode = node[Fusion.Children][current] or node[Fusion.Children]["%WILDCARD%"]
+		local isWildcard = currentNode == node[Fusion.Children][current]
+
+		if currentNode then
+			if isWildcard then
+				parameters[currentNode.Value.ParameterName] = current
+			end
+			if rest then
+				resolve(rest, currentNode) -- resolve
+			elseif not rest and #currentNode.Value ~= 0 then
+				self:setRoute(currentNode.Value, parameters)
+			end
+		end
+	end
+
+	resolve(path, self.Routes)
 end
 
 return Router.new
