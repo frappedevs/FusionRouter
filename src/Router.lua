@@ -66,6 +66,12 @@ function Router:canGoBack(steps: number?): boolean
     return #self.History > (steps or 1)
 end
 
+function Router:back(steps: number?)
+    assert(self:canGoBack(steps), "Router expects steps to be less than or equal to the number of steps in history, got " .. steps)
+    local route = self.History[#self.History - (steps or 1)]
+    self:setRoute(route, route.Parameters)
+end
+
 function Router:push(path: string, parameters: { [any]: any }?)
 	local function resolve(path: string, node: Types.TreeChild<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = Parse(path)
