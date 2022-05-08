@@ -23,17 +23,19 @@ function Router.new(routes: Types.Routes)
 
 	local self = setmetatable({}, Router)
 	self.Routes = Tree(routeIndices["/"])
-    self.History = {}
+	self.History = {}
 	routeIndices["/"] = nil
 	self.CurrentPage = {
-        Path = Fusion.Value(""),
-        Page = Fusion.Value(function(props) return Fusion.new "Frame" {} end),
-        Data = StateDict.new({}),
-    }
+		Path = Fusion.Value(""),
+		Page = Fusion.Value(function(props)
+			return Fusion.new("Frame")({})
+		end),
+		Data = StateDict.new({}),
+	}
 	for _, route in pairs(routeIndices) do
 		self:addRoute(route)
 	end
-    self:push("/")
+	self:push("/")
 
 	return self
 end
@@ -66,29 +68,37 @@ function Router:addRoute(route: Types.Route<string>)
 end
 
 function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any })
-    local duplicatedRoute = table.clone(route)
-    duplicatedRoute.Parameters = parameters
-    self.History[#self.History + 1] = duplicatedRoute
-    self.CurrentPage.Path:set(duplicatedRoute.Path)
-    self.CurrentPage.Page:set(duplicatedRoute.Page)
-    self.CurrentPage.Data:set(duplicatedRoute.Data)
-    self.CurrentPage.Parameters = duplicatedRoute.Parameters
-    for index, value in pairs(duplicatedRoute) do
-        if not table.find({ "path", "page", "data", "parameters" }, if type(index) == "string" then index:lower() else index) then
-            self.CurrentPage[index] = value
-        end
-    end
-    table.insert(self.History, duplicatedRoute)
+	local duplicatedRoute = table.clone(route)
+	duplicatedRoute.Parameters = parameters
+	self.History[#self.History + 1] = duplicatedRoute
+	self.CurrentPage.Path:set(duplicatedRoute.Path)
+	self.CurrentPage.Page:set(duplicatedRoute.Page)
+	self.CurrentPage.Data:set(duplicatedRoute.Data)
+	self.CurrentPage.Parameters = duplicatedRoute.Parameters
+	for index, value in pairs(duplicatedRoute) do
+		if
+			not table.find(
+				{ "path", "page", "data", "parameters" },
+				if type(index) == "string" then index:lower() else index
+			)
+		then
+			self.CurrentPage[index] = value
+		end
+	end
+	table.insert(self.History, duplicatedRoute)
 end
 
 function Router:canGoBack(steps: number?): boolean
-    return #self.History > (steps or 1)
+	return #self.History > (steps or 1)
 end
 
 function Router:back(steps: number?)
-    assert(self:canGoBack(steps), "Router expects steps to be less than or equal to the number of steps in history, got " .. steps)
-    local route = self.History[#self.History - (steps or 1)]
-    self:setRoute(route, route.Parameters)
+	assert(
+		self:canGoBack(steps),
+		"Router expects steps to be less than or equal to the number of steps in history, got " .. steps
+	)
+	local route = self.History[#self.History - (steps or 1)]
+	self:setRoute(route, route.Parameters)
 end
 
 function Router:push(path: string, parameters: { [any]: any }?)
