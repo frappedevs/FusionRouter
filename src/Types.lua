@@ -5,6 +5,7 @@ export type Route<T> = {
     Path: T,
     Page: (({ Router: Router, Parameters: { [any]: any } }) -> (Instance)),
     Data: { [string]: any },
+    Parameters: { [any]: any }?,
     [any]: any
 }
 
