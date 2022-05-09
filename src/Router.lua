@@ -91,6 +91,24 @@ function Router:push(path: string, parameters: { [any]: any }?)
 	resolve(path, self.Routes)
 end
 
+function Router:getRouterView()
+	local pageState = Fusion.State(self.CurrentPage.Page:get()())
+	local disconnectPageStateCompat = Fusion.Compat(self.CurrentPage.Page):onChange(function()
+		pageState:set(self.CurrentPage.Page:get()())
+	end)
+
+	return Fusion.New "Frame" {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 1, 0),
+		ClipsDescendants = true,
+
+		[Fusion.Children] = pageState,
+		[Fusion.OnEvent "Destroying"] = function()
+			disconnectPageStateCompat()
+		end,
+	}
+end
+
 return function(routes: Types.Routes)
 	local routeIndices = {}
 	for path, route in pairs(routes) do
