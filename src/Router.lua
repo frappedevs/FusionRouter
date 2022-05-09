@@ -9,37 +9,6 @@ local Types = require(script.Parent.Types)
 local Router = {} :: Types.Router
 Router.__index = Router
 
-function Router.new(routes: Types.Routes)
-	local routeIndices = {}
-	for path, route in pairs(routes) do
-		if type(path) == "string" then
-			route.Path = path
-		end
-		assert(type(route.Path) == "string", "Router expects route path to be a string, got " .. type(route.Path))
-		route.Path = route.Path:lower()
-		routeIndices[route.Path] = route
-	end
-	assert(routeIndices["/"], 'Router expects base route "/" to be supplied, got nil')
-
-	local self = setmetatable({}, Router)
-	self.Routes = Tree(routeIndices["/"])
-	self.History = {}
-	routeIndices["/"] = nil
-	self.CurrentPage = {
-		Path = Fusion.Value(""),
-		Page = Fusion.Value(function(props)
-			return Fusion.new("Frame")({})
-		end),
-		Data = StateDict.new({}),
-	}
-	for _, route in pairs(routeIndices) do
-		self:addRoute(route)
-	end
-	self:push("/")
-
-	return self
-end
-
 function Router:addRoute(route: Types.Route<string>)
 	local function resolve(path: string, node: Types.TreeChild<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = Parse(path)
@@ -122,4 +91,33 @@ function Router:push(path: string, parameters: { [any]: any }?)
 	resolve(path, self.Routes)
 end
 
-return Router.new
+return function(routes: Types.Routes)
+	local routeIndices = {}
+	for path, route in pairs(routes) do
+		if type(path) == "string" then
+			route.Path = path
+		end
+		assert(type(route.Path) == "string", "Router expects route path to be a string, got " .. type(route.Path))
+		route.Path = route.Path:lower()
+		routeIndices[route.Path] = route
+	end
+	assert(routeIndices["/"], 'Router expects base route "/" to be supplied, got nil')
+
+	local self = setmetatable({}, Router)
+	self.Routes = Tree(routeIndices["/"])
+	self.History = {}
+	routeIndices["/"] = nil
+	self.CurrentPage = {
+		Path = Fusion.State(""),
+		Page = Fusion.State(function(props)
+			return Fusion.New("Frame")({})
+		end),
+		Data = StateDict {},
+	}
+	for _, route in pairs(routeIndices) do
+		self:addRoute(route)
+	end
+	self:push("/")
+
+	return self
+end

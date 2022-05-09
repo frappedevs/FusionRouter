@@ -10,19 +10,6 @@ local Fusion = require(Packages.Fusion)
 local Tree = {}
 Tree.__index = Tree
 
-function Tree.new(value: any, children: { [string]: any }?, parent: any?)
-    local self = setmetatable({
-        Value = value,
-        [Fusion.Children] = {},
-        Parent = parent,
-    }, Tree)
-    if children then
-        self:newChild(children)
-    end
-
-    return self
-end
-
 function Tree:get()
     return self.Value
 end
@@ -58,4 +45,15 @@ function Tree:destroy()
     end
 end
 
-return Tree.new
+return function(value: any, children: { [string]: any }?, parent: any?)
+    local self = setmetatable({
+        Value = value,
+        [Fusion.Children] = {},
+        Parent = parent,
+    }, Tree)
+    if children then
+        self:newChild(children)
+    end
+
+    return self
+end
