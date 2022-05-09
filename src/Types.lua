@@ -23,10 +23,10 @@ export type TreeChild<T> = {
 
 export type Router = {
     CurrentPage: {
-        Path: Fusion.Value<string>,
-        Page: Fusion.Value<({ Router: Router, Parameters: { [any]: any } }) -> (Instance)>,
+        Path: Fusion.State<string>,
+        Page: Fusion.State<({ Router: Router, Parameters: { [any]: any } }) -> (Instance)>,
         Data: {
-            [any]: Fusion.Value<any>,
+            [any]: Fusion.State<any>,
         },
         [any]: any,
     },
