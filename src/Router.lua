@@ -19,7 +19,7 @@ function Router:addRoute(route: Types.Route<string>)
 		end
 		local currentNode = node[Fusion.Children][current]
 
-		if currentNode and rest then -- if current route exists and theres more
+		if currentNode and rest and rest ~= "/" then -- if current route exists and theres more
 			resolve(rest, currentNode) -- resolve
 		elseif currentNode and #currentNode.Value == 0 and not rest then -- if theres no more to resolve but there is a current route with no data
 			currentNode.Value = route -- set the current route to the new route
