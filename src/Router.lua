@@ -43,6 +43,9 @@ function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any })
 	self.History[#self.History + 1] = duplicatedRoute
 	for _, name in ipairs({ "Path", "Page", "Data" })
 		self.CurrentPage[name]:set(duplicatedRoute[name])
+		if self.CurrentPage[name].clearAll then
+			self.CurrentPage[name]:clearAll()
+		end
 	end
 	self.CurrentPage.Parameters = duplicatedRoute.Parameters or {}
 	table.insert(self.History, duplicatedRoute)
