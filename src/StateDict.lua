@@ -25,11 +25,29 @@ function StateDict:set(newValue: { [any]: any }, force: boolean?)
             end
         end
     end
-    resolve(self, newValue)
+    resolve(self._values, newValue)
+end
+
+function StateDict:get()
+    return table.freeze(self._values)
+end
+
+function StateDict:clearAll(force: boolean?)
+    local function resolve(value)
+        for name, value in pairs(value) do
+            if typeof(value) == "table" then
+                resolve(value, force)
+            else
+                value:set(nil, force)
+            end
+        end
+    end
+    
+    resolve(self._values)
 end
 
 return function(value: { [any]: any })
-    local self = setmetatable({}, StateDict)
+    local self = setmetatable({ _values = {} }, StateDict)
     self:set(value)
     return self
 end
