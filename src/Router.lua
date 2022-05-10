@@ -10,6 +10,7 @@ local Router = {} :: Types.Router
 Router.__index = Router
 
 function Router:addRoute(route: Types.Route<string>)
+	assert(self:checkRoute(path.Route), "Router expects a path that matches ([^/.]+)(.*), got malformed path")
 	local function resolve(path: string, node: Types.TreeChild<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = Parse(path)
 		local isWildcard = current:match("^:")
@@ -71,6 +72,7 @@ function Router:back(steps: number?)
 end
 
 function Router:push(path: string, parameters: { [any]: any }?)
+	assert(self:checkRoute(path), "Router expects a path that matches ([^/.]+)(.*), got malformed path")
 	local function resolve(path: string, node: Types.TreeChild<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = Parse(path)
 		local currentNode = node[Fusion.Children][current] or node[Fusion.Children]["%WILDCARD%"]
@@ -89,6 +91,17 @@ function Router:push(path: string, parameters: { [any]: any }?)
 	end
 
 	resolve(path, self.Routes)
+end
+
+function Router:checkRoute(path: string): boolean
+	local current, rest = Parse(path)
+	if current and rest then
+		return self:checkRoute(rest)
+	elseif not current then
+		return false
+	end
+	
+	return true
 end
 
 function Router:getRouterView()
