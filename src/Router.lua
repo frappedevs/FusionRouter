@@ -48,6 +48,7 @@ function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any })
 		end
 	end
 	self.CurrentPage.Parameters = duplicatedRoute.Parameters or {}
+	self.CurrentPage.Parameters.Router = self
 	table.insert(self.History, duplicatedRoute)
 end
 
@@ -98,9 +99,9 @@ function Router:checkRoute(path: string): boolean
 end
 
 function Router:getRouterView()
-	local pageState = Fusion.State(self.CurrentPage.Page:get()())
+	local pageState = Fusion.State(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
 	local disconnectPageStateCompat = Fusion.Compat(self.CurrentPage.Page):onChange(function()
-		pageState:set(self.CurrentPage.Page:get()())
+		pageState:set(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
 	end)
 
 	return Fusion.New "Frame" {
