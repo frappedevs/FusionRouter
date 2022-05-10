@@ -20,7 +20,7 @@ function StateDict:set(newValue: { [any]: any }, force: boolean?)
                 if oldValue[name] and oldValue[name].set then
                     oldValue[name]:set(value, force)
                 else
-                    oldValue[name] = Fusion.State(value)
+                    oldValue[name] = Fusion.Value(value)
                 end
             end
         end
@@ -29,14 +29,14 @@ function StateDict:set(newValue: { [any]: any }, force: boolean?)
 end
 
 function StateDict:get()
-    return table.freeze(self._values)
+    return table.freeze(table.clone(self._values))
 end
 
 function StateDict:clearAll(force: boolean?)
     local function resolve(value)
-        for name, value in pairs(value) do
+        for _, value in pairs(value) do
             if typeof(value) == "table" then
-                resolve(value, force)
+                resolve(value)
             else
                 value:set(nil, force)
             end
