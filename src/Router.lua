@@ -10,7 +10,7 @@ local Router = {} :: Types.Router
 Router.__index = Router
 
 function Router:addRoute(route: Types.Route<string>)
-	assert(self:checkRoute(path.Route), "Router expects a path that matches ([^/.]+)(.*), got malformed path")
+	assert(self:checkRoute(route.Path), "Router expects a path that matches ([^/.]+)(.*), got malformed path")
 	local function resolve(path: string, node: Types.TreeChild<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = Parse(path)
 		local isWildcard = current:match("^:")
@@ -41,7 +41,7 @@ function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any })
 	local duplicatedRoute = table.clone(route)
 	duplicatedRoute.Parameters = parameters
 	self.History[#self.History + 1] = duplicatedRoute
-	for _, name in ipairs({ "Path", "Page", "Data" })
+	for _, name in ipairs({ "Path", "Page", "Data" }) do
 		self.CurrentPage[name]:set(duplicatedRoute[name])
 		if self.CurrentPage[name].clearAll then
 			self.CurrentPage[name]:clearAll()
