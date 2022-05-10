@@ -108,7 +108,7 @@ end
 
 function Router:getRouterView()
 	local pageState = Fusion.Value(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
-	local disconnectPageStateCompat = Fusion.Observer(self.CurrentPage.Page):onChange(function()
+	local disconnectPageStateCompat = Fusion.Compat(self.CurrentPage.Page):onChange(function()
 		pageState:set(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
 	end)
 
