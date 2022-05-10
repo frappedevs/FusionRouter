@@ -33,7 +33,7 @@ end
 
 function Tree:newChild(children: { [string]: any })
     for name, value in pairs(children) do
-        assert(self[Fusion.Children][name], ("Children with %s already exists"):format(name))
+        assert(not self[Fusion.Children][name], ("Children with \"%s\" already exists"):format(name))
         self[Fusion.Children][name] = Tree.new(value, nil, self)
     end
 end
