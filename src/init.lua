@@ -106,10 +106,12 @@ function Router:checkRoute(path: string): boolean
 	return true
 end
 
-function Router:getRouterView()
+function Router:getRouterView(lifecycleFunction: (string) -> ()?)
 	local pageState = Fusion.Value(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
 	local disconnectPageStateCompat = Fusion.Compat(self.CurrentPage.Page):onChange(function()
+		if lifecycleFunction then lifecycleFunction("pageSwitch") end
 		pageState:set(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
+		if lifecycleFunction then lifecycleFunction("pageSwitched") end
 	end)
 
 	return Fusion.New "Frame" {
