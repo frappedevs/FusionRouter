@@ -6,7 +6,6 @@ export type Route<T> = {
     Page: (({ Router: Router, Parameters: { [any]: any } }) -> (Instance)),
     Data: { [string]: any },
     Parameters: { [any]: any }?,
-    [any]: any
 }
 
 export type Routes = {
@@ -28,7 +27,7 @@ export type Router = {
         Data: {
             [any]: Fusion.State<any>,
         },
-        [any]: any,
+        Parameters: { [any]: any },
     },
     History: { Route<string> },
     Routes: {
