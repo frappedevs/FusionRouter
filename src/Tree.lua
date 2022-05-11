@@ -7,10 +7,23 @@ local Packages = ReplicatedStorage.Packages
 
 local Fusion = require(Packages.Fusion)
 
+export type Tree = {
+    new: (value: any, children: { [string]: any }?, parent: Tree?),
+    get: () -> (any),
+    set: (any) -> (),
+    newChild: ({ [string]: any }) -> (),
+    getRoot: () -> (Tree?),
+    destroy: () -> ()
+
+    Value: any,
+    [Fusion.Children]: { [string]: Tree },
+    Parent: Tree?
+}
+
 local Tree = {}
 Tree.__index = Tree
 
-function Tree.new(value: any, children: { [string]: any }?, parent: any?)
+function Tree.new(value: any, children: { [string]: any }?, parent: any?): Tree
 	local self = setmetatable({
 		Value = value,
 		[Fusion.Children] = {},

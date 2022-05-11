@@ -7,6 +7,18 @@ local Packages = ReplicatedStorage.Packages
 
 local Fusion = require(Packages.Fusion)
 
+type DictOfStates<T> = {
+    [any]: Fusion.State<T> | DictOfStates
+}
+
+export type StateDict<T> = {
+    set: ({ [any]: <T> }, boolean?) -> (),
+    get: () -> (DictOfStates<T>),
+    clearAll: (boolean?) -> (),
+
+    _values: DictOfStates<T>,
+}
+
 local StateDict = {}
 StateDict.__index = StateDict
 
@@ -46,7 +58,7 @@ function StateDict:clearAll(force: boolean?)
     resolve(self._values)
 end
 
-return function(value: { [any]: any })
+return function(value: { [any]: any }): StateDict
     local self = setmetatable({ _values = {} }, StateDict)
     self:set(value)
     return self

@@ -126,7 +126,7 @@ function Router:getRouterView(lifecycleFunction: (string) -> ()?)
 	}
 end
 
-return function(routes: Types.Routes)
+return function(routes: Types.Routes): Types.Router
 	local routeIndices = {}
 	for path, route in pairs(routes) do
 		if type(path) == "string" then

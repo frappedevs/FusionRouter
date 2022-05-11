@@ -1,6 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Fusion = require(ReplicatedStorage.Packages.Fusion)
 
+local Tree = require(script.Parent.Tree)
+local StateDict = require(script.Parent.StateDict)
+
 export type Route<T> = {
     Path: T,
     Page: (({ Router: Router, Parameters: { [any]: any } }) -> (Instance)),
@@ -12,26 +15,17 @@ export type Routes = {
     [string|number]: Route<string?>,
 }
 
-export type TreeChild<T> = {
-    Value: T,
-    Children: {
-        [string]: TreeChild<T>
-    },
-    Parent: TreeChild<T>?,
-}
 
 export type Router = {
     CurrentPage: {
         Path: Fusion.State<string>,
         Page: Fusion.State<({ Router: Router, Parameters: { [any]: any } }) -> (Instance)>,
-        Data: {
-            [any]: Fusion.State<any>,
-        },
+        Data: StateDict.StateDict,
         Parameters: { [any]: any },
     },
     History: { Route<string> },
     Routes: {
-        [string]: TreeChild<Route<string>>,
+        [string]: Tree.Tree<Route<string>>,
     },
 
     new: CreateRouter,
@@ -41,9 +35,5 @@ export type Router = {
     back: (number?) -> (),
     canGoBack: (number?) -> (boolean),
 }
-
-export type CreateRouter = (Routes) -> (Router)
-export type Parse = (string) -> (string?, string?)
-export type Version = { Major: number, Minor: number, IsRelease: boolean }
 
 return {}
