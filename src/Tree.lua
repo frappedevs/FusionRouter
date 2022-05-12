@@ -16,7 +16,7 @@ export type Tree<T> = {
     destroy: () -> (),
 
     Value: T,
-    [Fusion.Children]: { [string]: Tree<T> },
+    [Fusion.Symbol]: { [string]: Tree<T> },
     Parent: Tree<T>?
 }
 
