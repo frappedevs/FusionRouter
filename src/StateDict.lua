@@ -8,11 +8,11 @@ local Packages = ReplicatedStorage.Packages
 local Fusion = require(Packages.Fusion)
 
 type DictOfStates<T> = {
-    [any]: Fusion.State<T> | DictOfStates
+    [any]: Fusion.State<T> | DictOfStates<T>
 }
 
 export type StateDict<T> = {
-    set: ({ [any]: <T> }, boolean?) -> (),
+    set: ({ [any]: T }, boolean?) -> (),
     get: () -> (DictOfStates<T>),
     clearAll: (boolean?) -> (),
 
@@ -58,7 +58,7 @@ function StateDict:clearAll(force: boolean?)
     resolve(self._values)
 end
 
-return function(value: { [any]: any }): StateDict
+return function(value: { [any]: any }): StateDict<any>
     local self = setmetatable({ _values = {} }, StateDict)
     self:set(value)
     return self

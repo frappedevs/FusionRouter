@@ -18,7 +18,7 @@ end
 
 function Router:addRoute(route: Types.Route<string>)
 	assert(self:checkRoute(route.Path), "Router expects a path that matches ([^/.]+)(.*), got malformed path")
-	local function resolve(path: string, node: Types.TreeChild<Types.Route<string> | { ParameterName: string? }>)
+	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = parse(path)
 		local isWildcard = current:match("^:")
 		if isWildcard then
@@ -77,7 +77,7 @@ function Router:push(path: string, parameters: { [any]: any }?)
 	path = path:lower() .. if path:sub(-1) == "/" then "" else "/"
 	assert(self:checkRoute(path), "Router expects a path that matches ([^/.]+)(.*), got malformed path")
 	parameters = parameters or {}
-	local function resolve(path: string, node: Types.TreeChild<Types.Route<string> | { ParameterName: string? }>)
+	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = parse(path)
 		local currentNode = node[Fusion.Children][current] or node[Fusion.Children]["%WILDCARD%"]
 		local isWildcard = node[Fusion.Children]["%WILDCARD%"] == node[Fusion.Children][current]

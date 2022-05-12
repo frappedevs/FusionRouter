@@ -20,7 +20,7 @@ export type Router = {
     CurrentPage: {
         Path: Fusion.State<string>,
         Page: Fusion.State<({ Router: Router, Parameters: { [any]: any } }) -> (Instance)>,
-        Data: StateDict.StateDict,
+        Data: StateDict.StateDict<any>,
         Parameters: { [any]: any },
     },
     History: { Route<string> },
@@ -28,7 +28,6 @@ export type Router = {
         [string]: Tree.Tree<Route<string>>,
     },
 
-    new: CreateRouter,
     addRoute: (Route<string>) -> (),
     getRoute: (string) -> (Route<string>?),
     push: (string, { [any]: any }) -> (),

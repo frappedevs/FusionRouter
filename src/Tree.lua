@@ -7,23 +7,23 @@ local Packages = ReplicatedStorage.Packages
 
 local Fusion = require(Packages.Fusion)
 
-export type Tree = {
-    new: (value: any, children: { [string]: any }?, parent: Tree?),
+export type Tree<T> = {
+    new: (value: any, children: { [string]: any }?, parent: Tree<T>?) -> (),
     get: () -> (any),
     set: (any) -> (),
     newChild: ({ [string]: any }) -> (),
-    getRoot: () -> (Tree?),
-    destroy: () -> ()
+    getRoot: () -> (Tree<T>?),
+    destroy: () -> (),
 
-    Value: any,
-    [Fusion.Children]: { [string]: Tree },
-    Parent: Tree?
+    Value: T,
+    [Fusion.Children]: { [string]: Tree<T> },
+    Parent: Tree<T>?
 }
 
 local Tree = {}
 Tree.__index = Tree
 
-function Tree.new(value: any, children: { [string]: any }?, parent: any?): Tree
+function Tree.new(value: any, children: { [string]: any }?, parent: any?): Tree<any>
 	local self = setmetatable({
 		Value = value,
 		[Fusion.Children] = {},
