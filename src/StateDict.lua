@@ -12,9 +12,9 @@ type DictOfStates<T> = {
 }
 
 export type StateDict<T> = {
-    set: ({ [any]: T }, boolean?) -> (),
-    get: () -> (DictOfStates<T>),
-    clearAll: (boolean?) -> (),
+    set: (StateDict<T>, { [any]: T }, boolean?) -> (),
+    get: (StateDict<T>) -> (DictOfStates<T>),
+    clearAll: (StateDict<T>, boolean?) -> (),
 
     _values: DictOfStates<T>,
 }

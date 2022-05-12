@@ -8,16 +8,16 @@ local Packages = ReplicatedStorage.Packages
 local Fusion = require(Packages.Fusion)
 
 export type Tree<T> = {
-    new: (value: any, children: { [string]: any }?, parent: Tree<T>?) -> (),
-    get: () -> (any),
-    set: (any) -> (),
-    newChild: ({ [string]: any }) -> (),
-    getRoot: () -> (Tree<T>?),
-    destroy: () -> (),
+    new: (value: any, children: { [string]: any }?, parent: Tree<any>?) -> (),
+    get: (Tree<T>) -> (any),
+    set: (Tree<T>, any) -> (),
+    newChild: (Tree<T>, { [string]: any }) -> (),
+    getRoot: (Tree<T>) -> (Tree<any>?),
+    destroy: (Tree<T>) -> (),
 
     Value: T,
-    [Fusion.Symbol]: { [string]: Tree<T> },
-    Parent: Tree<T>?
+    [Fusion.Symbol]: { [string]: Tree<any> },
+    Parent: Tree<any>?
 }
 
 local Tree = {}

@@ -28,11 +28,11 @@ export type Router = {
         [string]: Tree.Tree<Route<string>>,
     },
 
-    addRoute: (Route<string>) -> (),
-    getRoute: (string) -> (Route<string>?),
-    push: (string, { [any]: any }) -> (),
-    back: (number?) -> (),
-    canGoBack: (number?) -> (boolean),
+    addRoute: (Router, Route<string>) -> (),
+    getRoute: (Router, string) -> (Route<string>?),
+    push: (Router, string, { [any]: any }) -> (),
+    back: (Router, number?) -> (),
+    canGoBack: (Router, number?) -> (boolean),
 }
 
 return {}
