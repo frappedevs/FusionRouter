@@ -32,7 +32,7 @@ function StateDict:set(newValue: { [any]: any }, force: boolean?)
                 if oldValue[name] and oldValue[name].set then
                     oldValue[name]:set(value, force)
                 else
-                    oldValue[name] = Fusion.Value(value)
+                    oldValue[name] = Fusion.State(value)
                 end
             end
         end

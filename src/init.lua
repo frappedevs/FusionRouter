@@ -106,7 +106,7 @@ function Router:checkRoute(path: string): boolean
 end
 
 function Router:getRouterView(lifecycleFunction: (string) -> ()?)
-	local pageState = Fusion.Value(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
+	local pageState = Fusion.State(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
 	local disconnectPageStateCompat = Fusion.Compat(self.CurrentPage.Page):onChange(function()
 		if lifecycleFunction then lifecycleFunction("pageSwitch") end
 		pageState:set(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
@@ -142,8 +142,8 @@ return function(routes: Types.Routes): Types.Router
 	self.Routes = Tree(routeIndices["/"])
 	self.History = {}
 	self.CurrentPage = {
-		Path = Fusion.Value(""),
-		Page = Fusion.Value(function(props)
+		Path = Fusion.State(""),
+		Page = Fusion.State(function(props)
 			return Fusion.New("Frame")({})
 		end),
 		Data = StateDict {},
