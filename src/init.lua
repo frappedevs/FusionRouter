@@ -10,33 +10,37 @@ Router.__index = Router
 
 local function parse(path: string): (string?, string?)
 	path = path:lower()
-	if path:sub(-1, -1) ~= "/" then path ..= "/" end
-	if path == "/" then return path, nil end
-    local _, _, current, rest = path:find("([^/.]+)(.*)")
-    return current, if rest ~= "/" then rest else nil
+	if path:sub(-1, -1) ~= "/" then
+		path ..= "/"
+	end
+	if path == "/" then
+		return path, nil
+	end
+	local _, _, current, rest = path:find("([^/.]+)(.*)")
+	return current, if rest ~= "/" then rest else nil
 end
 
 function Router:addRoute(route: Types.Route<string>)
 	assert(self:checkRoute(route.Path), "Router expects a path that matches ([^/.]+)(.*), got malformed path")
 	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = parse(path)
-		local isWildcard = current:match("^:")
-		if isWildcard then
-			current = "%WILDCARD%"
-		end
-		local currentNode = node[Fusion.Children][current]
-		if currentNode and rest then -- if current route exists and theres more
-			resolve(rest, currentNode) -- resolve
-		elseif currentNode and #currentNode.Value == 0 and not rest then -- if theres no more to resolve but there is a current route with no data
+		local isWildcard = current:byte(1) == (":"):byte(1)
+		local nodeName = if isWildcard then "%WILDCARD%" else current
+		local currentNode = node[Fusion.Children][nodeName]
+		if currentNode and #currentNode.Value == 0 and not rest then -- if theres no more to resolve but there is a current route with no data
 			currentNode.Value = route -- set the current route to the new route
 		elseif not currentNode then -- if theres no current route and theres more
 			node:newChild({ -- create new route with empty data or route if no more
-				[current] = if not rest
+				[nodeName] = if not isWildcard
 					then route
 					else {
-						ParameterName = if isWildcard then current:sub(2) else nil,
+						ParameterName = if isWildcard then current:sub(2, -1) else nil,
 					},
 			})
+			currentNode = node[Fusion.Children][nodeName]
+		end
+		if rest then
+			resolve(rest, currentNode)
 		end
 	end
 
@@ -79,7 +83,7 @@ function Router:push(path: string, parameters: { [any]: any }?)
 	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = parse(path)
 		local currentNode = node[Fusion.Children][current] or node[Fusion.Children]["%WILDCARD%"]
-		local isWildcard = node[Fusion.Children]["%WILDCARD%"] == node[Fusion.Children][current]
+		local isWildcard = node[Fusion.Children]["%WILDCARD%"] == currentNode
 		if currentNode then
 			if isWildcard then
 				parameters[currentNode.Value.ParameterName] = current
@@ -87,7 +91,7 @@ function Router:push(path: string, parameters: { [any]: any }?)
 			if rest then
 				resolve(rest, currentNode) -- resolve
 			elseif not rest and next(currentNode.Value) ~= nil then
-				self:setRoute(currentNode.Value, parameters)
+				self:setRoute(if not isWildcard then currentNode.Value else node.Value, parameters)
 			end
 		end
 	end
@@ -108,9 +112,13 @@ end
 function Router:getRouterView(lifecycleFunction: (string) -> ()?)
 	local pageState = Fusion.State(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
 	local disconnectPageStateCompat = Fusion.Compat(self.CurrentPage.Page):onChange(function()
-		if lifecycleFunction then lifecycleFunction("pageSwitch") end
+		if lifecycleFunction then
+			lifecycleFunction("pageSwitch")
+		end
 		pageState:set(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
-		if lifecycleFunction then lifecycleFunction("pageSwitched") end
+		if lifecycleFunction then
+			lifecycleFunction("pageSwitched")
+		end
 	end)
 
 	return Fusion.New "Frame" {
@@ -132,7 +140,14 @@ return function(routes: Types.Routes): Types.Router
 			route.Path = path
 		end
 		for name, expectedType in pairs({ Path = "string", Page = "function", Data = "table" }) do
-			assert(type(route[name]) == expectedType, ("Router expects route \"%s\" to have a table member named \"%s\", got %s"):format(path, name, type(route[name])))
+			assert(
+				type(route[name]) == expectedType,
+				('Router expects route "%s" to have a table member named "%s", got %s'):format(
+					path,
+					name,
+					type(route[name])
+				)
+			)
 		end
 		routeIndices[route.Path] = route
 	end
@@ -144,9 +159,9 @@ return function(routes: Types.Routes): Types.Router
 	self.CurrentPage = {
 		Path = Fusion.State(""),
 		Page = Fusion.State(function(props)
-			return Fusion.New("Frame")({})
+			return Fusion.New "Frame" {}
 		end),
-		Data = StateDict {},
+		Data = StateDict({}),
 	}
 	for _, route in pairs(routeIndices) do
 		self:addRoute(route)
