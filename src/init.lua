@@ -9,9 +9,9 @@ local Router = {} :: Types.Router
 Router.__index = Router
 
 local function parse(path: string): (string?, string?)
-	if path == "/" then
-		return path, nil
-	end
+	path = path:lower()
+	if path:sub(-1, -1) ~= "/" then path ..= "/" end
+	if path == "/" then return path, nil end
     local _, _, current, rest = path:find("([^/.]+)(.*)")
     return current, if rest ~= "/" then rest else nil
 end
@@ -74,7 +74,6 @@ function Router:back(steps: number?)
 end
 
 function Router:push(path: string, parameters: { [any]: any }?)
-	path = path:lower() .. if path:sub(-1) == "/" then "" else "/"
 	assert(self:checkRoute(path), "Router expects a path that matches ([^/.]+)(.*), got malformed path")
 	parameters = parameters or {}
 	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
@@ -135,7 +134,6 @@ return function(routes: Types.Routes): Types.Router
 		for name, expectedType in pairs({ Path = "string", Page = "function", Data = "table" }) do
 			assert(type(route[name]) == expectedType, ("Router expects route \"%s\" to have a table member named \"%s\", got %s"):format(path, name, type(route[name])))
 		end
-		route.Path = route.Path:lower() .. if route.Path:sub(-1) == "/" then "" else "/"
 		routeIndices[route.Path] = route
 	end
 	assert(routeIndices["/"], 'Router expects base route "/" to be supplied, got nil')
