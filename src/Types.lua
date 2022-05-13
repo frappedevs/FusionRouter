@@ -6,7 +6,7 @@ local StateDict = require(script.Parent.StateDict)
 
 export type Route<T> = {
     Path: T,
-    Page: (({ Router: Router, Parameters: { [any]: any } }) -> (Instance)),
+    Page: (({ Router: Router, [any]: any }) -> (Instance)),
     Data: { [string]: any },
     Parameters: { [any]: any }?,
 }
@@ -19,7 +19,7 @@ export type Routes = {
 export type Router = {
     CurrentPage: {
         Path: Fusion.State<string>,
-        Page: Fusion.State<({ Router: Router, Parameters: { [any]: any } }) -> (Instance)>,
+        Page: Fusion.State<({ Router: Router, [any]: any }) -> (Instance)>,
         Data: StateDict.StateDict<any>,
         Parameters: { [any]: any },
     },
