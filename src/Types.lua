@@ -29,7 +29,8 @@ export type Router = {
     },
 
     addRoute: (Router, Route<string>) -> (),
-    getRoute: (Router, string) -> (Route<string>?),
+    setRoute: (Router, Route<string>) -> (),
+    checkRoute: (Router, string) -> boolean,
     push: (Router, string, { [any]: any }) -> (),
     back: (Router, number?) -> (),
     canGoBack: (Router, number?) -> (boolean),
