@@ -61,7 +61,9 @@ function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any })
 	end
 	self.CurrentPage.Parameters = duplicatedRoute.Parameters or {}
 	self.CurrentPage.Parameters.Router = self
-	table.insert(self.History, duplicatedRoute)
+	if not self.CurrentPage.Path:get() == route.Path then
+		table.insert(self.History, duplicatedRoute)
+	end
 end
 
 function Router:canGoBack(steps: number?): boolean
