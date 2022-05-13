@@ -1,170 +1,174 @@
---[=[
-	@class Router
-	UI routing class for Fusion
---]=]
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Fusion = require(script.Fusion)
+local Fusion = require(ReplicatedStorage.Packages.Fusion)
+local Tree = require(script.Tree)
+local StateDict = require(script.StateDict)
+local Types = require(script.Types)
 
-local Router = { ROUTER_BASE_PATH = "/", URL_SEPARATOR = "/" }
+local Router = {} :: Types.Router
 Router.__index = Router
 
-type Routes = {
-	Path: string,
-	View: ({ [any]: any }) -> any,
-	[any]: any,
-}
+local function parse(path: string): (string?, string?)
+	path = path:lower()
+	if path:sub(-1, -1) ~= "/" then
+		path ..= "/"
+	end
+	if path == "/" then
+		return path, nil
+	end
+	local _, _, current, rest = path:find("([^/.]+)(.*)")
+	return current, if rest ~= "/" then rest else nil
+end
 
-function populateStates(self, tabl)
-	for key, data in pairs(tabl) do
-		if typeof(data) == "table" then
-			self[key] = self[key] or {}
-			populateStates(self[key], data)
-		elseif key ~= "Data" then
-			if self[key] and self[key].set then
-				self[key]:set(data)
-			else
-				self[key] = Fusion.Value(data)
+function Router:addRoute(route: Types.Route<string>)
+	assert(self:checkRoute(route.Path), "Router expects a path that matches ([^/.]+)(.*), got malformed path")
+	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
+		local current, rest = parse(path)
+		local isWildcard = current:byte(1) == (":"):byte(1)
+		local nodeName = if isWildcard then "%WILDCARD%" else current
+		local currentNode = node[Fusion.Children][nodeName]
+		if currentNode and #currentNode.Value == 0 and not rest then -- if theres no more to resolve but there is a current route with no data
+			currentNode.Value = route -- set the current route to the new route
+		elseif not currentNode then -- if theres no current route and theres more
+			node:newChild({ -- create new route with empty data or route if no more
+				[nodeName] = if not isWildcard
+					then route
+					else {
+						ParameterName = if isWildcard then current:sub(2, -1) else nil,
+					},
+			})
+			currentNode = node[Fusion.Children][nodeName]
+		end
+		if rest then
+			resolve(rest, currentNode)
+		end
+	end
+
+	resolve(route.Path, self.Routes)
+end
+
+function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any })
+	local duplicatedRoute = table.clone(route)
+	duplicatedRoute.Parameters = parameters
+	self.History[#self.History + 1] = duplicatedRoute
+	for _, name in ipairs({ "Path", "Page", "Data" }) do
+		self.CurrentPage[name]:set(duplicatedRoute[name])
+		--[[ Clearing all values can be really destructive, let's not do that until we find a solution that doesn't trigger any problematic errors
+		if self.CurrentPage[name].clearAll then
+			self.CurrentPage[name]:clearAll()
+		end
+		--]]
+	end
+	self.CurrentPage.Parameters = duplicatedRoute.Parameters or {}
+	self.CurrentPage.Parameters.Router = self
+	if not self.CurrentPage.Path:get() == route.Path then
+		table.insert(self.History, duplicatedRoute)
+	end
+end
+
+function Router:canGoBack(steps: number?): boolean
+	return #self.History > (steps or 1)
+end
+
+function Router:back(steps: number?)
+	assert(
+		self:canGoBack(steps),
+		"Router expects steps to be less than or equal to the number of steps in history, got " .. (steps or 1)
+	)
+	local route = self.History[#self.History - (steps or 1)]
+	self:setRoute(route, route.Parameters)
+end
+
+function Router:push(path: string, parameters: { [any]: any }?)
+	assert(self:checkRoute(path), "Router expects a path that matches ([^/.]+)(.*), got malformed path")
+	parameters = parameters or {}
+	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
+		local current, rest = parse(path)
+		local currentNode = node[Fusion.Children][current] or node[Fusion.Children]["%WILDCARD%"]
+		local isWildcard = node[Fusion.Children]["%WILDCARD%"] == currentNode
+		if currentNode then
+			if isWildcard then
+				parameters[currentNode.Value.ParameterName] = current
+			end
+			if rest then
+				resolve(rest, currentNode) -- resolve
+			elseif not rest and next(currentNode.Value) ~= nil then
+				self:setRoute(if not isWildcard then currentNode.Value else node.Value, parameters)
 			end
 		end
 	end
+
+	resolve(path, self.Routes)
 end
 
-function purify(tabl)
-	for key, value in ipairs(tabl) do
-		if value == "" or value == " " then
-			table.remove(tabl, key)
-		end
+function Router:checkRoute(path: string): boolean
+	local current, rest = parse(path)
+	if current and rest then
+		return self:checkRoute(rest)
+	elseif not current then
+		return false
 	end
-
-	return tabl
+	return true
 end
 
-function checkRoute(routes: Routes)
-	local seen = {}
-	for _, data in ipairs(routes) do
-		assert(data.Path and data.View, ("%s is required"):format(not data.Path and "Path" or "View"))
-		if data.Path:sub(-1) ~= "/" then
-			data.Path ..= "/"
+function Router:getRouterView(lifecycleFunction: (string) -> ()?)
+	local pageState = Fusion.State(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
+	local disconnectPageStateCompat = Fusion.Compat(self.CurrentPage.Page):onChange(function()
+		if lifecycleFunction then
+			lifecycleFunction("pageSwitch")
 		end
-		if seen[data.Path] then
-			error("This path already exists: " .. data.Path)
+		pageState:set(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
+		if lifecycleFunction then
+			lifecycleFunction("pageSwitched")
 		end
-		seen[data.Path] = true
-	end
-end
+	end)
 
-function checkURL(originalPath: string, path: string): (boolean, { string? })
-	if path:sub(-1) ~= "/" then
-		path ..= "/"
-	end
-
-	local originalSplit = purify(originalPath:lower():split(Router.URL_SEPARATOR) or {})
-	local split = purify(path:lower():split(Router.URL_SEPARATOR) or {})
-	local slugs = {}
-	if #originalSplit < #split then
-		return false, {}
-	end
-
-	for index, token in ipairs(originalSplit) do
-		local isSlug = token:match("^:") and token:match(":$")
-		if isSlug then
-			slugs[token:sub(2, -2)] = split[index] or ""
-		elseif not isSlug and split[index] ~= token then
-			return false, {}
-		end
-	end
-
-	return true, slugs
-end
-
---[=[
-	Updates the Router class to all RouterViews
-	@within Router
-	@param withData { [any]: any }? -- Any extra data to send to the route's view
---]=]
-function Router:_update(withData: { [any]: any }?)
-	self.Current.Data = withData or {}
-	self.Current.Data.Router = self
-	for index, routerView in ipairs(self._routerViews) do
-		if routerView.Component then
-			routerView.Lifecycle("PageSwitch")
-			routerView.Children:get():Destroy()
-			routerView.Children:set(self.Current.View:get()(self.Current.Data))
-			routerView.Lifecycle("PageSwitchEnded")
-		else
-			table.remove(self._routerViews, index)
-		end
-	end
-end
-
---[=[
-	Pushes the new route to the stack. All RouterViews will be automatically updated
-	@within Router
-	@param path string -- The route's path
-	@param withData { [any]: any }? -- Any extra data to send to the route's view
---]=]
-function Router:Push(path: string, withData: { [any]: any }?)
-	withData = withData or {}
-	for _, route in ipairs(self.Routes) do
-		local isSame, slugs = checkURL(route.Path, path)
-		if isSame then
-			populateStates(self.Current, route)
-			withData.Slugs = slugs
-			self:_update(withData)
-			break
-		end
-	end
-end
-
---[=[
-	Generates and returns a new RouterView component binded to the current Router class
-	@within Router
-	@param lifecycle (event: string) -> ()? -- A function to call when a lifecycle reaches
-	@return [Frame] -- Returns the RouterView component
---]=]
-function Router:GetView(lifecycle: (string) -> ()?)
-	local children = Fusion.Value(self.Current.View:get()(self.Current.Data))
-	local routerView = Fusion.New("Frame")({
+	return Fusion.New "Frame" {
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
-		[Fusion.Children] = children,
-	})
-	table.insert(self._routerViews, {
-		Component = routerView,
-		Children = children,
-		Lifecycle = lifecycle or function() end,
-	})
+		ClipsDescendants = true,
 
-	return routerView
+		[Fusion.Children] = pageState,
+		[Fusion.OnEvent "Destroying"] = function()
+			disconnectPageStateCompat()
+		end,
+	}
 end
 
---[=[
-	Creates a new Router class.
-
-	Each route must have at least 2 fields, `Path` and `View`
-	The `path` field represents the identifier for the route, duplicated path should never exist as it will break the
-	functionality of the Router. The `View` field is a function that will be called when [Router:Push()] is called with
-	the corresponding path, it should return a [Instance].
-
-	You can add other kind of data, the Data field is reserved for route-specific data and is not stateful by default.
-	@param {routes} { Path: string, View: ({ [any]: any }) -> any, [any]: any } -- The routes to add
-	@return Router -- Returns the new Router class
-]=]
-function Router.new(routes: {Routes})
-	local self = setmetatable({
-		Current = {},
-		Routes = routes,
-		_routerViews = {},
-	}, Router)
-	checkRoute(routes)
-	for _, route in pairs(self.Routes) do
-		if route.Path == self.ROUTER_BASE_PATH then
-			self:Push(route.Path)
-			break
+return function(routes: Types.Routes): Types.Router
+	local routeIndices = {}
+	for path, route in pairs(routes) do
+		if type(path) == "string" then
+			route.Path = path
 		end
+		for name, expectedType in pairs({ Path = "string", Page = "function", Data = "table" }) do
+			assert(
+				type(route[name]) == expectedType,
+				('Router expects route "%s" to have a table member named "%s", got %s'):format(
+					path,
+					name,
+					type(route[name])
+				)
+			)
+		end
+		routeIndices[route.Path] = route
 	end
+	assert(routeIndices["/"], 'Router expects base route "/" to be supplied, got nil')
+
+	local self = setmetatable({}, Router)
+	self.Routes = Tree(routeIndices["/"])
+	self.History = {}
+	self.CurrentPage = {
+		Path = Fusion.State(""),
+		Page = Fusion.State(function(props)
+			return Fusion.New "Frame" {}
+		end),
+		Data = StateDict({}),
+	}
+	for _, route in pairs(routeIndices) do
+		self:addRoute(route)
+	end
+	self:push("/")
 
 	return self
 end
-
-return Router
