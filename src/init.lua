@@ -4,20 +4,25 @@ local Fusion = require(ReplicatedStorage.Packages.Fusion)
 local Tree = require(script.Tree)
 local StateDict = require(script.StateDict)
 local Types = require(script.Types)
+local ErrorView = require(script.ErrorView)
 
 local Router = {} :: Types.Router
 Router.__index = Router
 
 local function parse(path: string): (string?, string?)
 	path = path:lower()
-	if path:sub(-1, -1) ~= "/" then
-		path ..= "/"
-	end
-	if path == "/" then
-		return path, nil
-	end
-	local _, _, current, rest = path:find("([^/.]+)(.*)")
-	return current, if rest ~= "/" then rest else nil
+	if path:sub(-1, -1) ~= "/" then path ..= "/" end
+	if path == "/" then return path, nil end
+    local _, _, current, rest = path:find("([^/.]+)(.*)")
+    return current, if rest ~= "/" then rest else nil
+end
+
+function Router:_postError(context: { Title: string, Message: string, CanReturn: boolean? })
+	self._error.IsActive:set(true)
+	self._error.Title:set(context.Title)
+	self._error.Message:set(context.Message)
+	self._error.CanReturn:set(context.CanReturn or true)
+	warn(("\n[FusionRouter]: %s:\n\n%s"):format(context.Title, context.Message))
 end
 
 function Router:addRoute(route: Types.Route<string>)
@@ -48,16 +53,12 @@ function Router:addRoute(route: Types.Route<string>)
 end
 
 function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any })
+	self._error.IsActive:set(false)
 	local duplicatedRoute = table.clone(route)
 	duplicatedRoute.Parameters = parameters
 	self.History[#self.History + 1] = duplicatedRoute
 	for _, name in ipairs({ "Path", "Page", "Data" }) do
 		self.CurrentPage[name]:set(duplicatedRoute[name])
-		--[[ Clearing all values can be really destructive, let's not do that until we find a solution that doesn't trigger any problematic errors
-		if self.CurrentPage[name].clearAll then
-			self.CurrentPage[name]:clearAll()
-		end
-		--]]
 	end
 	self.CurrentPage.Parameters = duplicatedRoute.Parameters or {}
 	self.CurrentPage.Parameters.Router = self
@@ -71,16 +72,27 @@ function Router:canGoBack(steps: number?): boolean
 end
 
 function Router:back(steps: number?)
-	assert(
-		self:canGoBack(steps),
-		"Router expects steps to be less than or equal to the number of steps in history, got " .. (steps or 1)
-	)
+	if not self:canGoBack(steps) then
+		self:_postError({
+			Title = "Runtime error",
+			Message = ("Router:back(%s) - Router expects steps to be less than or equal to the number of steps in history, got %s"):format(steps or 1, steps or 1),
+			CanReturn = true,
+		})
+		return
+	end
 	local route = self.History[#self.History - (steps or 1)]
-	self:setRoute(route, route.Parameters)
+	self:setRoute(route, route.Parameters or {})
 end
 
 function Router:push(path: string, parameters: { [any]: any }?)
-	assert(self:checkRoute(path), "Router expects a path that matches ([^/.]+)(.*), got malformed path")
+	if not self:checkRoute(path) then
+		self:_postError({
+			Title = "Runtime error",
+			Message = ("Router:push(\"%s\", { ... }) - Router expects a path that matches ([^/.]+)(.*), got malformed path"):format(path),
+			CanReturn = true,
+		})
+		return
+	end
 	parameters = parameters or {}
 	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = parse(path)
@@ -95,6 +107,12 @@ function Router:push(path: string, parameters: { [any]: any }?)
 			elseif not rest and next(currentNode.Value) ~= nil then
 				self:setRoute(if not isWildcard then currentNode.Value else node.Value, parameters)
 			end
+		else
+			self:_postError({
+				Title = "Runtime error",
+				Message = ("Router:push(\"%s\", { ... }) - Router expects path \"%s\" to be a Route, got nil"):format(path, path),
+				CanReturn = true,
+			})
 		end
 	end
 
@@ -112,23 +130,67 @@ function Router:checkRoute(path: string): boolean
 end
 
 function Router:getRouterView(lifecycleFunction: (string) -> ()?)
-	local pageState = Fusion.State(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
-	local disconnectPageStateCompat = Fusion.Compat(self.CurrentPage.Page):onChange(function()
-		if lifecycleFunction then
-			lifecycleFunction("pageSwitch")
+	local pageState = Fusion.State()
+	local wrappedLifecycleFunction = function(lifecycle: string): boolean
+		if lifecycleFunction then 
+			local success, result = pcall(lifecycleFunction, lifecycle)
+			if not success then
+				self:_postError({
+					Title = "Runtime error",
+					Message = ("When attempting to build page \"%s\", lifecycle function threw an error:\n\n%s"):format(self.CurrentPage.Path:get(), result),
+					CanReturn = true,
+				})
+			end
+			return success
 		end
-		pageState:set(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
-		if lifecycleFunction then
-			lifecycleFunction("pageSwitched")
+	end
+	local function render()
+		if not wrappedLifecycleFunction("pageSwitch") then return end
+		local success, result = pcall(function()
+			pageState:set(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
+			return nil
+		end)
+		if not success then
+			self:_postError({
+				Title = "Runtime error",
+				Message = ("When attempting to build page \"%s\" for RouterView, got error\n\n%s"):format(self.CurrentPage.Path:get(), result),
+				CanReturn = true,
+			})
 		end
+		if not wrappedLifecycleFunction("pageSwitched") then return end
+	end
+	local disconnectPageStateCompat = Fusion.Observer(self.CurrentPage.Page):onChange(function()
+		render()
 	end)
+	render()
 
 	return Fusion.New "Frame" {
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 1, 0),
+		Size = UDim2.fromScale(1, 1),
 		ClipsDescendants = true,
 
-		[Fusion.Children] = pageState,
+		[Fusion.Children] = {
+			Fusion.New "Frame" {
+				BackgroundTransparency = 1,
+				Size = UDim2.fromScale(1, 1),
+				ZIndex = 2,
+
+				[Fusion.Children] = ErrorView {
+					IsActive = self._error.IsActive,
+					Title = self._error.Title,
+					Message = self._error.Message,
+					CanReturn = self._error.CanReturn,
+					Router = self,
+				}
+			},
+
+			Fusion.New "Frame" {
+				BackgroundTransparency = 1,
+				Size = UDim2.fromScale(1, 1),
+				
+				[Fusion.Children] = pageState,
+			},
+		},
 		[Fusion.OnEvent "Destroying"] = function()
 			disconnectPageStateCompat()
 		end,
@@ -137,34 +199,40 @@ end
 
 return function(routes: Types.Routes): Types.Router
 	local routeIndices = {}
+	local self = setmetatable({
+		_error = {
+			IsActive = Fusion.State(false),
+			Title = Fusion.State(""),
+			Message = Fusion.State(""),
+			CanReturn = Fusion.State(false),
+		},
+		History = {},
+		CurrentPage = {
+			Path = Fusion.State(""),
+			Page = Fusion.State(function(props)
+				return Fusion.New("Frame")({})
+			end),
+			Data = StateDict {},
+		}
+	}, Router)
+
 	for path, route in pairs(routes) do
 		if type(path) == "string" then
 			route.Path = path
 		end
 		for name, expectedType in pairs({ Path = "string", Page = "function", Data = "table" }) do
-			assert(
-				type(route[name]) == expectedType,
-				('Router expects route "%s" to have a table member named "%s", got %s'):format(
-					path,
-					name,
-					type(route[name])
-				)
-			)
+			if type(route[name]) ~= expectedType then 
+				self:_postError({
+					Title = "Fatal error",
+					Message = ("Router.new({ ... }) - Router expects route \"%s\" to have a table member named \"%s\", got %s"):format(path, name, type(route[name])),
+					CanReturn = false,
+				})
+			end
 		end
 		routeIndices[route.Path] = route
 	end
-	assert(routeIndices["/"], 'Router expects base route "/" to be supplied, got nil')
 
-	local self = setmetatable({}, Router)
 	self.Routes = Tree(routeIndices["/"])
-	self.History = {}
-	self.CurrentPage = {
-		Path = Fusion.State(""),
-		Page = Fusion.State(function(props)
-			return Fusion.New "Frame" {}
-		end),
-		Data = StateDict({}),
-	}
 	for _, route in pairs(routeIndices) do
 		self:addRoute(route)
 	end
