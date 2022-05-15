@@ -9,12 +9,69 @@ local ErrorView = require(script.ErrorView)
 local Router = {} :: Types.Router
 Router.__index = Router
 
+local ERROR_MESSAGES = {
+	BAD_PATH = function(path: string)
+		return {
+			Title = "Runtime error",
+			Message = (
+				'Router:push("%s", { ... }) - Router expects a path that matches ([^/.]+)(.*), got malformed path'
+			):format(path),
+		}
+	end,
+
+	CANT_GO_BACK = function(steps: number)
+		return {
+			Title = "Runtime error",
+			Message = (
+				"Router:back(%s) - Router expects steps to be less than or equal to the number of steps in history, got %s"
+			):format(steps or 1, steps or 1),
+		}
+	end,
+
+	ROUTE_NOT_FOUND = function(path: string)
+		return {
+			Title = "Runtime error",
+			Message = ('Router:push("%s", { ... }) - Router expects path "%s" to be a Route, got nil'):format(
+				path,
+				path
+			),
+		}
+	end,
+
+	PAGE_BUILD_ERROR = function(path: string, functionType: "A" | "B", reason: string)
+		local functionType = if functionType == "A" then "page builder" else "lifecycle"
+		return {
+			Title = "Fatal error",
+			Message = ('When attempting to build page "%s", %s function threw an error:\n\n%s'):format(
+				path,
+				functionType,
+				reason
+			),
+			CanReturn = false,
+		}
+	end,
+
+	BAD_ROUTE = function(path: string, memberName: string, typeName: string)
+		return {
+			Title = "Fatal error",
+			Message = (
+				'Router.new({ ... }) - Router expects route "%s" to have a table member named "%s", got %s'
+			):format(path, memberName, typeName),
+			CanReturn = false,
+		}
+	end,
+}
+
 local function parse(path: string): (string?, string?)
 	path = path:lower()
-	if path:sub(-1, -1) ~= "/" then path ..= "/" end
-	if path == "/" then return path, nil end
-    local _, _, current, rest = path:find("([^/.]+)(.*)")
-    return current, if rest ~= "/" then rest else nil
+	if path:sub(-1, -1) ~= "/" then
+		path ..= "/"
+	end
+	if path == "/" then
+		return path, nil
+	end
+	local _, _, current, rest = path:find("([^/.]+)(.*)")
+	return current, if rest ~= "/" then rest else nil
 end
 
 function Router:_postError(context: { Title: string, Message: string, CanReturn: boolean? })
@@ -26,7 +83,10 @@ function Router:_postError(context: { Title: string, Message: string, CanReturn:
 end
 
 function Router:addRoute(route: Types.Route<string>)
-	assert(self:checkRoute(route.Path), "Router expects a path that matches ([^/.]+)(.*), got malformed path")
+	if not self:checkRoute(route.Path) then
+		self:_postError(ERROR_MESSAGES.BAD_PATH(route.Path))
+		return
+	end
 	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = parse(path)
 		local isWildcard = current:byte(1) == (":"):byte(1)
@@ -73,11 +133,7 @@ end
 
 function Router:back(steps: number?)
 	if not self:canGoBack(steps) then
-		self:_postError({
-			Title = "Runtime error",
-			Message = ("Router:back(%s) - Router expects steps to be less than or equal to the number of steps in history, got %s"):format(steps or 1, steps or 1),
-			CanReturn = true,
-		})
+		self:_postError(ERROR_MESSAGES.CANT_GO_BACK(steps or 1))
 		return
 	end
 	local route = self.History[#self.History - (steps or 1)]
@@ -86,11 +142,7 @@ end
 
 function Router:push(path: string, parameters: { [any]: any }?)
 	if not self:checkRoute(path) then
-		self:_postError({
-			Title = "Runtime error",
-			Message = ("Router:push(\"%s\", { ... }) - Router expects a path that matches ([^/.]+)(.*), got malformed path"):format(path),
-			CanReturn = true,
-		})
+		self:_postError(ERROR_MESSAGES.BAD_PATH(path))
 		return
 	end
 	parameters = parameters or {}
@@ -103,16 +155,12 @@ function Router:push(path: string, parameters: { [any]: any }?)
 				parameters[currentNode.Value.ParameterName] = current
 			end
 			if rest then
-				resolve(rest, currentNode) -- resolve
+				resolve(rest, currentNode)
 			elseif not rest and next(currentNode.Value) ~= nil then
 				self:setRoute(if not isWildcard then currentNode.Value else node.Value, parameters)
 			end
 		else
-			self:_postError({
-				Title = "Runtime error",
-				Message = ("Router:push(\"%s\", { ... }) - Router expects path \"%s\" to be a Route, got nil"):format(path, path),
-				CanReturn = true,
-			})
+			self:_postError(ERROR_MESSAGES.ROUTE_NOT_FOUND(path))
 		end
 	end
 
@@ -132,32 +180,28 @@ end
 function Router:getRouterView(lifecycleFunction: (string) -> ()?)
 	local pageState = Fusion.State()
 	local wrappedLifecycleFunction = function(lifecycle: string): boolean
-		if lifecycleFunction then 
+		if lifecycleFunction then
 			local success, result = pcall(lifecycleFunction, lifecycle)
 			if not success then
-				self:_postError({
-					Title = "Runtime error",
-					Message = ("When attempting to build page \"%s\", lifecycle function threw an error:\n\n%s"):format(self.CurrentPage.Path:get(), result),
-					CanReturn = true,
-				})
+				self:_postError(ERROR_MESSAGES.PAGE_BUILD_ERROR(self.CurrentPage.Page:get(), "B", result))
 			end
 			return success
 		end
 	end
 	local function render()
-		if not wrappedLifecycleFunction("pageSwitch") then return end
+		if not wrappedLifecycleFunction("pageSwitch") then
+			return
+		end
 		local success, result = pcall(function()
 			pageState:set(self.CurrentPage.Page:get()(self.CurrentPage.Parameters))
-			return nil
+			return
 		end)
 		if not success then
-			self:_postError({
-				Title = "Runtime error",
-				Message = ("When attempting to build page \"%s\" for RouterView, got error\n\n%s"):format(self.CurrentPage.Path:get(), result),
-				CanReturn = true,
-			})
+			self:_postError(ERROR_MESSAGES.PAGE_BUILD_ERROR(self.CurrentPage.Page:get(), "A", result))
 		end
-		if not wrappedLifecycleFunction("pageSwitched") then return end
+		if not wrappedLifecycleFunction("pageSwitched") then
+			return
+		end
 	end
 	local disconnectPageStateCompat = Fusion.Observer(self.CurrentPage.Page):onChange(function()
 		render()
@@ -181,13 +225,13 @@ function Router:getRouterView(lifecycleFunction: (string) -> ()?)
 					Message = self._error.Message,
 					CanReturn = self._error.CanReturn,
 					Router = self,
-				}
+				},
 			},
 
 			Fusion.New "Frame" {
 				BackgroundTransparency = 1,
 				Size = UDim2.fromScale(1, 1),
-				
+
 				[Fusion.Children] = pageState,
 			},
 		},
@@ -212,8 +256,8 @@ return function(routes: Types.Routes): Types.Router
 			Page = Fusion.State(function(props)
 				return Fusion.New("Frame")({})
 			end),
-			Data = StateDict {},
-		}
+			Data = StateDict({}),
+		},
 	}, Router)
 
 	for path, route in pairs(routes) do
@@ -221,12 +265,8 @@ return function(routes: Types.Routes): Types.Router
 			route.Path = path
 		end
 		for name, expectedType in pairs({ Path = "string", Page = "function", Data = "table" }) do
-			if type(route[name]) ~= expectedType then 
-				self:_postError({
-					Title = "Fatal error",
-					Message = ("Router.new({ ... }) - Router expects route \"%s\" to have a table member named \"%s\", got %s"):format(path, name, type(route[name])),
-					CanReturn = false,
-				})
+			if type(route[name]) ~= expectedType then
+				self:_postError(ERROR_MESSAGES.BAD_ROUTE(route.Path, name, typeof(route[name])))
 			end
 		end
 		routeIndices[route.Path] = route
