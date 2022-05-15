@@ -260,18 +260,27 @@ return function(routes: Types.Routes): Types.Router
 		},
 	}, Router)
 
-	for path, route in pairs(routes) do
-		if type(path) == "string" then
-			route.Path = path
-		end
-		for name, expectedType in pairs({ Path = "string", Page = "function", Data = "table" }) do
-			if type(route[name]) ~= expectedType then
-				self:_postError(ERROR_MESSAGES.BAD_ROUTE(route.Path, name, typeof(route[name])))
+	local function resolve(routes, prevPath: string?)
+		for path, route in pairs(routes) do
+			if type(path) == "string" then
+				route.Path = path
+			end
+			if prevPath then
+				route.Path = prevPath .. route.Path
+			end
+			for name, expectedType in pairs({ Path = "string", Page = "function", Data = "table" }) do
+				if type(route[name]) ~= expectedType then
+					self:_postError(ERROR_MESSAGES.BAD_ROUTE(route.Path, name, typeof(route[name])))
+				end
+			end
+			routeIndices[route.Path] = route
+			if route.Children then
+				resolve(route.Children, route.Path)
 			end
 		end
-		routeIndices[route.Path] = route
 	end
 
+	resolve(routes)
 	self.Routes = Tree(routeIndices["/"])
 	for _, route in pairs(routeIndices) do
 		self:addRoute(route)
