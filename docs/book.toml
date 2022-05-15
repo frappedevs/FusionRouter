@@ -1,0 +1,6 @@
+[book]
+authors = ["7kayoh"]
+language = "en"
+multilingual = false
+src = "src"
+title = "FusionRouter Documentation"
