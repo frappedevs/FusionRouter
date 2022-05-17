@@ -63,7 +63,6 @@ local ERROR_MESSAGES = {
 }
 
 local function parse(path: string): (string?, string?)
-	path = path:lower()
 	if path:sub(-1, -1) ~= "/" then
 		path ..= "/"
 	end
