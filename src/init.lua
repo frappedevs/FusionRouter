@@ -20,11 +20,12 @@ local ERROR_MESSAGES = {
 	end,
 
 	CANT_GO_BACK = function(steps: number)
+		local stringSteps = tostring(steps or 1)
 		return {
 			Title = "Runtime error",
 			Message = (
 				"Router:back(%s) - Router expects steps to be less than or equal to the number of steps in history, got %s"
-			):format(steps or 1, steps or 1),
+			):format(stringSteps, stringSteps),
 		}
 	end,
 
@@ -38,8 +39,8 @@ local ERROR_MESSAGES = {
 		}
 	end,
 
-	PAGE_BUILD_ERROR = function(path: string, functionType: "A" | "B", reason: string)
-		local functionType = if functionType == "A" then "page builder" else "lifecycle"
+	PAGE_BUILD_ERROR = function(path: string, functionType: "A" | "B" | "page builder" | "lifecycle", reason: string)
+		functionType = if functionType == "A" or functionType == "page builder" then "page builder" else "lifecycle"
 		return {
 			Title = "Fatal error",
 			Message = ('When attempting to build page "%s", %s function threw an error:\n\n%s'):format(
@@ -147,8 +148,9 @@ function Router:push(path: string, parameters: { [any]: any }?)
 	parameters = parameters or {}
 	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = parse(path)
-		local currentNode = node[Fusion.Children][current] or node[Fusion.Children]["%WILDCARD%"]
-		local isWildcard = node[Fusion.Children]["%WILDCARD%"] == currentNode
+		local children = node[Fusion.Children]
+		local currentNode = children[current] or children["%WILDCARD%"]
+		local isWildcard = currentNode == children["%WILDCARD%"]
 		if currentNode then
 			if isWildcard then
 				parameters[currentNode.Value.ParameterName] = current
@@ -186,6 +188,7 @@ function Router:getRouterView(lifecycleFunction: (string) -> ()?)
 			end
 			return success
 		end
+		return true
 	end
 	local function render()
 		if not wrappedLifecycleFunction("pageSwitch") then
