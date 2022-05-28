@@ -6,10 +6,7 @@
 - Dynamic routing & route parameters for writing contextual pages
 - Lifecycle functions for implementing page transitions
 
-Click one of the links below in order to jump to a specific page:
-- [Introduction](./Introduction.md)
-- [Installation](./Installation.md)
-- [Concepts](./Concepts.md)
-- [Basic Usage](./Basic_Usage.md)
-- [API Reference](./API_Reference.md)
-- [Changelog](./Changelog.md)
+## Quick links:
+- [Introduction](./Introduction/README.md)
+- [Tutorials](./Tutorials/README.md)
+- [API Reference](./API_Reference/README.md)
