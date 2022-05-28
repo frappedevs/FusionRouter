@@ -8,7 +8,7 @@ These tutorials assume:
   - You do not need to be super familiar with it, but base understanding of how things work in Fusion will allow you to understand whatever is explained in this section.
 
 ## How These Tutorials Work
-You can find a list of all published tutorials in [the index file of this folder](./README.md). Tutorials here are grouped together by category just like with the Fusion documentation:
+You can find a list of all published tutorials in [the index file of this folder](../README.md). Tutorials here are grouped together by category just like with the Fusion documentation:
 - **Fundamentals** introduces the core ideas of FusionRouter - defining routes, navigation through pages, using page parameters.
 - **Further Basics** builds on those core ideas by adding advanced concepts for building more complex application. They are usually optimization tips for ensuring scalability of your application when using FusionRouter.
 

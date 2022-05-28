@@ -87,6 +87,11 @@ function Router:addRoute(route: Types.Route<string>)
 		self:_postError(ERROR_MESSAGES.BAD_PATH(route.Path))
 		return
 	end
+	for name, expectedType in pairs({ Path = "string", Page = "function", Data = "table" }) do
+		if type(route[name]) ~= expectedType then
+			self:_postError(ERROR_MESSAGES.BAD_ROUTE(route.Path or "???", name, typeof(route[name])))
+		end
+	end
 	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = parse(path)
 		local isWildcard = current:byte(1) == (":"):byte(1)
