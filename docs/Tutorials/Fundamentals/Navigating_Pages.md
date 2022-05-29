@@ -235,6 +235,189 @@ The `params.Router` member is a reference to `DemoRouter` in this situation, whi
 
 Great! We have basically learnt the basics of FusionRouter at this point, but there are still a lot more to learn to actually use FusionRouter.
 
+## Going Back
+We have learnt how to go to a new page, what if we want to go back?
+
+~~FusionRouter saves previously-visited page to a table, so you can just call `:setRoute()` with the page.~~ **No, you shouldn't do that**. FusionRouter has a method called `:back()` which simplifies the entire process a lot for you, in one single line.
+
+```lua
+DemoRouter:back()
+```
+
+Let's make it so the button goes back when `MouseButton2Click` is fired:
+```lua
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Packages = ReplicatedStorage.Packages
+
+local Fusion = require(Packages.Fusion)
+local FusionRouter = require(Packages.FusionRouter)
+
+local DemoRouter = FusionRouter {
+	["/"] = {
+        Data = {},
+		Page = function(params)
+			return Fusion.New "TextButton" {
+                Size = UDim2.fromScale(1, 1),
+				Text = "Hello, world!",
+
+                [Fusion.OnEvent "Activated"] = function()
+                    params.Router:push("/foo")
+                end,
+
+				[Fusion.OnEvent "MouseButton2Click"] = function()
+					params.Router:back()
+				end,
+			}
+		end,
+	},
+
+	["/foo"] = {
+        Data = {},
+		Page = function(params)
+			return Fusion.New "TextButton" {
+                Size = UDim2.fromScale(1, 1),
+				Text = "Foo!",
+                
+                [Fusion.OnEvent "Activated"] = function()
+                    params.Router:push("/bar")
+                end,
+
+				[Fusion.OnEvent "MouseButton2Click"] = function()
+					params.Router:back()
+				end,
+			}
+		end,
+	},
+}
+
+DemoRouter:addRoute({
+	Path = "/bar",
+    Data = {},
+	Page = function()
+		return Fusion.New "TextButton" {
+            Size = UDim2.fromScale(1, 1),
+			Text = "Foo, Bar!",
+
+            [Fusion.OnEvent "Activated"] = function()
+                DemoRouter:push("/")
+            end,
+
+			[Fusion.OnEvent "MouseButton2Click"] = function()
+				DemoRouter:back()
+			end,
+		}
+	end,
+})
+
+local DemoUI = Fusion.New "ScreenGui" {
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	Parent = Players.LocalPlayer.PlayerGui,
+
+	[Fusion.Children] = {
+		Fusion.New "Frame" {
+			Size = UDim2.fromScale(1, 1),
+
+			[Fusion.Children] = { DemoRouter:getRouterView() }
+		}
+	}
+}
+```
+
+And let's hit 'play' and try it out- uh oh. Apparently FusionRouter errored, why did this happen?
+
+![](./Files/Screenshots/Navigating_Pages/Image4.png)
+
+That is because `:back()` errors if it can't go back anymore. To prevent this from happening, we can use the provided `:canGoBack()` method, which returns a boolean if FusionRouter can go back or not. Let's write an if statement with `:canGoBack()` for each of them:
+
+```lua
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Packages = ReplicatedStorage.Packages
+
+local Fusion = require(Packages.Fusion)
+local FusionRouter = require(Packages.FusionRouter)
+
+local DemoRouter = FusionRouter {
+	["/"] = {
+        Data = {},
+		Page = function(params)
+			return Fusion.New "TextButton" {
+                Size = UDim2.fromScale(1, 1),
+				Text = "Hello, world!",
+
+                [Fusion.OnEvent "Activated"] = function()
+                    params.Router:push("/foo")
+                end,
+
+				[Fusion.OnEvent "MouseButton2Click"] = function()
+					if params.Router:canGoBack() then
+						params.Router:back()
+					end
+				end,
+			}
+		end,
+	},
+
+	["/foo"] = {
+        Data = {},
+		Page = function(params)
+			return Fusion.New "TextButton" {
+                Size = UDim2.fromScale(1, 1),
+				Text = "Foo!",
+                
+                [Fusion.OnEvent "Activated"] = function()
+                    params.Router:push("/bar")
+                end,
+
+				[Fusion.OnEvent "MouseButton2Click"] = function()
+					if params.Router:canGoBack() then
+						params.Router:back()
+					end
+				end,
+			}
+		end,
+	},
+}
+
+DemoRouter:addRoute({
+	Path = "/bar",
+    Data = {},
+	Page = function()
+		return Fusion.New "TextButton" {
+            Size = UDim2.fromScale(1, 1),
+			Text = "Foo, Bar!",
+
+            [Fusion.OnEvent "Activated"] = function()
+                DemoRouter:push("/")
+            end,
+
+			[Fusion.OnEvent "MouseButton2Click"] = function()
+				if DemoRouter:canGoBack() then
+					DemoRouter:back()
+				end
+			end,
+		}
+	end,
+})
+
+local DemoUI = Fusion.New "ScreenGui" {
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	Parent = Players.LocalPlayer.PlayerGui,
+
+	[Fusion.Children] = {
+		Fusion.New "Frame" {
+			Size = UDim2.fromScale(1, 1),
+
+			[Fusion.Children] = { DemoRouter:getRouterView() }
+		}
+	}
+}
+```
+
+Now, it works!
+
 ## Quick links:
+- [Next](./Page_Parameters.md)
 - [All Tutorials](../README.md)
 - [Home](../../README.md)
