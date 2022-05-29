@@ -148,5 +148,6 @@ DemoRouter:addRoute({
 ```
 
 ## Quick links:
+- [Next](./Rendering_Pages.md)
 - [All Tutorials](../README.md)
 - [Home](../../README.md)

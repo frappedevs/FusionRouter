@@ -138,5 +138,6 @@ local DemoUI = Fusion.New "ScreenGui" {
 ```
 
 ## Quick links:
+- [Next](./Navigating_Pages.md)
 - [All Tutorials](../README.md)
 - [Home](../../README.md)
