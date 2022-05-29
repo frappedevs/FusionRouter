@@ -58,7 +58,7 @@ local DemoUI = Fusion.New "ScreenGui" {
 }
 ```
 
-## Pushing
+## Going Forward
 FusionRouter exposes a method called `:push()` for navigating to a specific page. This is pretty much the only method to do navigation excluding `:back()`. Even though there is another method called `:setRoute()` which requires you to pick an actual route table from the router class itself, that method is counterproductive in many ways.
 
 The `:push()` method requires a string parameter. That is to let FusionRouter know which page you are trying to go to. Let's try navigating to `/foo`:
