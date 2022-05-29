@@ -119,7 +119,8 @@ local DemoUI = Fusion.New "ScreenGui" {
 DemoRouter:push("/foo")
 ```
 
-![](./Files/Screenshots/Rendering_Pages/Image2.png)
+![](./Files/Screenshots/Navigating_Pages/Image1.png)
+
 It's that simple! You just have to provide the path parameter to navigate to another page.
 
 ___
@@ -192,6 +193,8 @@ local DemoUI = Fusion.New "ScreenGui" {
 }
 ```
 
+![](./Files/Screenshots/Navigating_Pages/Image2.png)
+
 Oh... hold on, notice how the `DemoRouter` in the `OnEvent` function is being underlined? That's because of how Luau works! Luckily, FusionRouter solved this problem for us. You see, if you ever looked into the source code, you will notice how when FusionRouter is rendering the page, it calls the function with an additional parameter. **That's a parameter table**, a detailed explaination of that can be found in later sections, but for now we will access the `Router` member in that parameter table.
 
 Let's make those two functions to use the parameter table:
@@ -228,7 +231,8 @@ local DemoRouter = FusionRouter {
 ```
 The `params.Router` member is a reference to `DemoRouter` in this situation, which allows you to do the same thing with `DemoRouter`. Now, let's hit 'Play' and see the results again:
 
-![](./Files/Screenshots/Rendering_Pages/Image4.gif)
+![](./Files/Screenshots/Navigating_Pages/Image3.gif)
+
 Great! We have basically learnt the basics of FusionRouter at this point, but there are still a lot more to learn to actually use FusionRouter.
 
 ## Quick links:
