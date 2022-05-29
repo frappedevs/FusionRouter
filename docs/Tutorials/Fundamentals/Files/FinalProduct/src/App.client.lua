@@ -16,6 +16,12 @@ local DemoRouter = FusionRouter {
                 [Fusion.OnEvent "Activated"] = function()
                     params.Router:push("/foo")
                 end,
+
+				[Fusion.OnEvent "MouseButton2Click"] = function()
+					if params.Router:canGoBack() then
+						params.Router:back()
+					end
+				end,
 			}
 		end,
 	},
@@ -30,6 +36,12 @@ local DemoRouter = FusionRouter {
                 [Fusion.OnEvent "Activated"] = function()
                     params.Router:push("/bar")
                 end,
+
+				[Fusion.OnEvent "MouseButton2Click"] = function()
+					if params.Router:canGoBack() then
+						params.Router:back()
+					end
+				end,
 			}
 		end,
 	},
@@ -46,6 +58,12 @@ DemoRouter:addRoute({
             [Fusion.OnEvent "Activated"] = function()
                 DemoRouter:push("/")
             end,
+
+			[Fusion.OnEvent "MouseButton2Click"] = function()
+				if DemoRouter:canGoBack() then
+					DemoRouter:back()
+				end
+			end,
 		}
 	end,
 })
