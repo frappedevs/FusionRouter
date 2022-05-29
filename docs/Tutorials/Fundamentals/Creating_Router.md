@@ -96,6 +96,7 @@ The code above adds a new route with the path `/bar`, and displays a `TextLabel`
 ___
 
 > **Note**
+> 
 > If you hit 'Play' now, you will get nothing. Why? [Because you did not provide a way to render the results](./Rendering_Pages.md)
 
 ___
