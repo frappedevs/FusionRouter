@@ -64,9 +64,6 @@ local ERROR_MESSAGES = {
 }
 
 local function parse(path: string): (string?, string?)
-	if path:sub(-1, -1) ~= "/" then
-		path ..= "/"
-	end
 	if path == "/" then
 		return path, nil
 	end
@@ -82,39 +79,54 @@ function Router:_postError(context: { Title: string, Message: string, CanReturn:
 	warn(("\n[FusionRouter]: %s:\n\n%s"):format(context.Title, context.Message))
 end
 
-function Router:addRoute(route: Types.Route<string>)
-	if not self:checkRoute(route.Path) then
-		self:_postError(ERROR_MESSAGES.BAD_PATH(route.Path))
-		return
-	end
-	for name, expectedType in pairs({ Path = "string", Page = "function", Data = "table" }) do
-		if type(route[name]) ~= expectedType then
-			self:_postError(ERROR_MESSAGES.BAD_ROUTE(route.Path or "???", name, typeof(route[name])))
-		end
-	end
-	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
+function Router:addRoutes(routes: Types.Routes, _prevPath: string?)
+	type routeTreeNode = Tree.Tree<Types.Route<string> | { ParameterName: string? }>
+	local function resolve(path: string, node: routeTreeNode)
 		local current, rest = parse(path)
-		local isWildcard = current:byte(1) == (":"):byte(1)
-		local nodeName = if isWildcard then "%WILDCARD%" else current
+		local nodeName = if current:byte(1) == (":"):byte(1) then "%WILDCARD%" else current
 		local currentNode = node[Fusion.Children][nodeName]
-		if currentNode and #currentNode.Value == 0 and not rest then -- if theres no more to resolve but there is a current route with no data
-			currentNode.Value = route -- set the current route to the new route
-		elseif not currentNode then -- if theres no current route and theres more
-			node:newChild({ -- create new route with empty data or route if no more
-				[nodeName] = if not isWildcard
+
+		if currentNode then
+			if #currentNode.Value == 0 and not rest then
+				currentNode.Value = route
+			end
+		else
+			node:newChild({
+				[nodeName] = if nodeName ~= "%WILDCARD%"
 					then route
 					else {
-						ParameterName = if isWildcard then current:sub(2, -1) else nil,
+						ParameterName = if nodeName == "%WILDCARD%" then current:sub(2, -1) else nil, 
 					},
 			})
-			currentNode = node[Fusion.Children][nodeName]
 		end
 		if rest then
 			resolve(rest, currentNode)
 		end
 	end
 
-	resolve(route.Path, self.Routes)
+	for path, route in routes do
+		route.Data = route.Data or {}
+		route.Path = if type(path) == "string" then path else route.Path
+		if prevPath then
+			route.Path = _prevPath .. route.Path
+		end
+		route.Path ..= if route.Path:sub(-1, -1) ~= "/" then "/" else ""
+		if not self:checkRoute(route.Path) then
+			self:_postError(ERROR_MESSAGES.BAD_PATH(route.Path))
+			return
+		end
+		for name, expectedType in { Path = "string", Page = "function" } do
+			if type(route[name]) ~= expectedType then
+				self:_postError(ERROR_MESSAGES.BAD_ROUTE(route.Path or tostring(route), name, typeof(route[name])))
+				return
+			end
+		end
+
+		resolve(route.Path, self.Routes)
+		if route.Children then
+			self:addRoutes(route.Children, route.Path)
+		end
+	end
 end
 
 function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any}, shouldInsert: boolean?)
@@ -249,7 +261,6 @@ function Router:getRouterView(lifecycleFunction: (string) -> ()?)
 end
 
 return function(routes: Types.Routes): Types.Router
-	local routeIndices = {}
 	local self = setmetatable({
 		_error = {
 			IsActive = Fusion.State(false),
@@ -266,32 +277,13 @@ return function(routes: Types.Routes): Types.Router
 			Data = StateDict({}),
 		},
 	}, Router)
-
-	local function resolve(routes, prevPath: string?)
-		for path, route in pairs(routes) do
-			if type(path) == "string" then
-				route.Path = path
-			end
-			if prevPath then
-				route.Path = prevPath .. route.Path
-			end
-			for name, expectedType in pairs({ Path = "string", Page = "function", Data = "table" }) do
-				if type(route[name]) ~= expectedType then
-					self:_postError(ERROR_MESSAGES.BAD_ROUTE(route.Path, name, typeof(route[name])))
-				end
-			end
-			routeIndices[route.Path] = route
-			if route.Children then
-				resolve(route.Children, route.Path)
-			end
+	for path, route in routes do
+		if path == "/" or route.Path == "/" then
+			self.Routes = Tree(route)
+			break
 		end
 	end
-
-	resolve(routes)
-	self.Routes = Tree(routeIndices["/"])
-	for _, route in pairs(routeIndices) do
-		self:addRoute(route)
-	end
+	self:addRoutes(routes)
 	self:push("/")
 
 	return self
