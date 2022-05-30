@@ -9,6 +9,7 @@ local ErrorView = require(script.ErrorView)
 local Router = {} :: Types.Router
 Router.__index = Router
 
+local WILDCARD_PATH = "%WC%"
 local ERROR_MESSAGES = {
 	BAD_PATH = function(path: string)
 		return {
@@ -83,7 +84,7 @@ function Router:addRoutes(routes: Types.Routes, _prevPath: string?)
 	type routeTreeNode = Tree.Tree<Types.Route<string> | { ParameterName: string? }>
 	local function resolve(path: string, node: routeTreeNode)
 		local current, rest = parse(path)
-		local nodeName = if current:byte(1) == (":"):byte(1) then "%WILDCARD%" else current
+		local nodeName = if current:byte(1) == (":"):byte(1) then WILDCARD_PATH else current
 		local currentNode = node[Fusion.Children][nodeName]
 
 		if currentNode then
@@ -92,10 +93,10 @@ function Router:addRoutes(routes: Types.Routes, _prevPath: string?)
 			end
 		else
 			node:newChild({
-				[nodeName] = if nodeName ~= "%WILDCARD%"
+				[nodeName] = if nodeName ~= WILDCARD_PATH
 					then route
 					else {
-						ParameterName = if nodeName == "%WILDCARD%" then current:sub(2, -1) else nil, 
+						ParameterName = if nodeName == WILDCARD_PATH then current:sub(2, -1) else nil, 
 					},
 			})
 		end
@@ -166,8 +167,8 @@ function Router:push(path: string, parameters: { [any]: any }?)
 	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = parse(path)
 		local children = node[Fusion.Children]
-		local currentNode = children[current] or children["%WILDCARD%"]
-		local isWildcard = currentNode == children["%WILDCARD%"]
+		local currentNode = children[current] or children[WILDCARD_PATH]
+		local isWildcard = currentNode == children[WILDCARD_PATH]
 		if currentNode then
 			if isWildcard then
 				parameters[currentNode.Value.ParameterName] = current
