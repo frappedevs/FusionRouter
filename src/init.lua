@@ -117,7 +117,7 @@ function Router:addRoute(route: Types.Route<string>)
 	resolve(route.Path, self.Routes)
 end
 
-function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any })
+function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any}, shouldInsert: boolean?)
 	self._error.IsActive:set(false)
 	local duplicatedRoute = table.clone(route)
 	duplicatedRoute.Parameters = parameters
@@ -127,7 +127,7 @@ function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any })
 	end
 	self.CurrentPage.Parameters = duplicatedRoute.Parameters or {}
 	self.CurrentPage.Parameters.Router = self
-	if not self.CurrentPage.Path:get() == route.Path then
+	if not self.CurrentPage.Path:get() == route.Path or not shouldInsert then
 		table.insert(self.History, duplicatedRoute)
 	end
 end
@@ -142,7 +142,7 @@ function Router:back(steps: number?)
 		return
 	end
 	local route = self.History[#self.History - (steps or 1)]
-	self:setRoute(route, route.Parameters or {})
+	self:setRoute(route, route.Parameters or {}, false)
 end
 
 function Router:push(path: string, parameters: { [any]: any }?)
