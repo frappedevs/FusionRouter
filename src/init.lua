@@ -124,8 +124,8 @@ function Router:addRoutes(routes: Types.Routes, _prevPath: string?)
 		end
 
 		resolve(route.Path, self.Routes)
-		if route.Children then
-			self:addRoutes(route.Children, route.Path)
+		if route[Fusion.Children] then
+			self:addRoutes(route[Fusion.Children], route.Path)
 		end
 	end
 end
