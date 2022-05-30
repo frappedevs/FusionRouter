@@ -135,7 +135,7 @@ function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any}, 
 	local duplicatedRoute = table.clone(route)
 	duplicatedRoute.Parameters = parameters
 	self.History[#self.History + 1] = duplicatedRoute
-	for _, name in ipairs({ "Path", "Page", "Data" }) do
+	for _, name in in { "Path", "Page", "Data" } do
 		self.CurrentPage[name]:set(duplicatedRoute[name])
 	end
 	self.CurrentPage.Parameters = duplicatedRoute.Parameters or {}
