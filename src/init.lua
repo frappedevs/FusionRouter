@@ -88,7 +88,7 @@ function Router:addRoutes(routes: Types.Routes, _prevPath: string?)
 		local currentNode = node[Fusion.Children][nodeName]
 
 		if currentNode then
-			if #currentNode.Value == 0 and not rest then
+			if not rest then
 				currentNode.Value = route
 			end
 		else
@@ -166,8 +166,7 @@ function Router:push(path: string, parameters: { [any]: any }?)
 	parameters = parameters or {}
 	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = parse(path)
-		local children = node[Fusion.Children]
-		local currentNode = children[current] or children[WILDCARD_PATH]
+		local currentNode = node[Fusion.Children][current] or node[Fusion.Children][WILDCARD_PATH]
 		local isWildcard = currentNode == children[WILDCARD_PATH]
 		if currentNode then
 			if isWildcard then
