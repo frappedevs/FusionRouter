@@ -51,16 +51,11 @@ function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any })
 	local duplicatedRoute = table.clone(route)
 	duplicatedRoute.Parameters = parameters
 	self.History[#self.History + 1] = duplicatedRoute
-	for _, name in ipairs({ "Path", "Page", "Data" }) do
-		self.CurrentPage[name]:set(duplicatedRoute[name])
-		--[[ Clearing all values can be really destructive, let's not do that until we find a solution that doesn't trigger any problematic errors
-		if self.CurrentPage[name].clearAll then
-			self.CurrentPage[name]:clearAll()
-		end
-		--]]
-	end
 	self.CurrentPage.Parameters = duplicatedRoute.Parameters or {}
 	self.CurrentPage.Parameters.Router = self
+	for _, name in ipairs({ "Path", "Page", "Data" }) do
+		self.CurrentPage[name]:set(duplicatedRoute[name])
+	end
 	if not self.CurrentPage.Path:get() == route.Path then
 		table.insert(self.History, duplicatedRoute)
 	end
