@@ -195,11 +195,11 @@ function Router:checkRoute(path: string): boolean
 	return true
 end
 
-function Router:getRouterView(lifecycleFunction: (string) -> ()?)
+function Router:getRouterView(lifecycleFunction: (string, { [string]: any }) -> ()?)
 	local pageState = Fusion.State()
 	local wrappedLifecycleFunction = function(lifecycle: string): boolean
 		if lifecycleFunction then
-			local success, result = pcall(lifecycleFunction, lifecycle)
+			local success, result = pcall(lifecycleFunction, lifecycle, self.CurrentPage)
 			if not success then
 				self:_postError(ERROR_MESSAGES.PAGE_BUILD_ERROR(self.CurrentPage.Page:get(), "B", result))
 			end
