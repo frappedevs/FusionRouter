@@ -135,11 +135,11 @@ function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any}, 
 	local duplicatedRoute = table.clone(route)
 	duplicatedRoute.Parameters = parameters
 	self.History[#self.History + 1] = duplicatedRoute
+	self.CurrentPage.Parameters = duplicatedRoute.Parameters or {}
+	self.CurrentPage.Parameters.Router = self
 	for _, name in in { "Path", "Page", "Data" } do
 		self.CurrentPage[name]:set(duplicatedRoute[name])
 	end
-	self.CurrentPage.Parameters = duplicatedRoute.Parameters or {}
-	self.CurrentPage.Parameters.Router = self
 	if not self.CurrentPage.Path:get() == route.Path or not shouldInsert then
 		table.insert(self.History, duplicatedRoute)
 	end
