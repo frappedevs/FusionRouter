@@ -82,7 +82,7 @@ end
 
 function Router:addRoutes(routes: Types.Routes, _prevPath: string?)
 	type routeTreeNode = Tree.Tree<Types.Route<string> | { ParameterName: string? }>
-	local function resolve(path: string, node: routeTreeNode)
+	local function resolve(path: string, route: Types.Route<string>, node: routeTreeNode)
 		local current, rest = parse(path)
 		local nodeName = if current:byte(1) == (":"):byte(1) then WILDCARD_PATH else current
 		local currentNode = node[Fusion.Children][nodeName]
@@ -99,16 +99,17 @@ function Router:addRoutes(routes: Types.Routes, _prevPath: string?)
 						ParameterName = if nodeName == WILDCARD_PATH then current:sub(2, -1) else nil, 
 					},
 			})
+			currentNode = node[Fusion.Children][nodeName]
 		end
 		if rest then
-			resolve(rest, currentNode)
+			resolve(rest, route, currentNode)
 		end
 	end
 
 	for path, route in routes do
 		route.Data = route.Data or {}
 		route.Path = if type(path) == "string" then path else route.Path
-		if prevPath then
+		if _prevPath then
 			route.Path = _prevPath .. route.Path
 		end
 		route.Path ..= if route.Path:sub(-1, -1) ~= "/" then "/" else ""
@@ -116,14 +117,14 @@ function Router:addRoutes(routes: Types.Routes, _prevPath: string?)
 			self:_postError(ERROR_MESSAGES.BAD_PATH(route.Path))
 			return
 		end
-		for name, expectedType in { Path = "string", Page = "function" } do
+		for name, expectedType in pairs({ Path = "string", Page = "function" }) do
 			if type(route[name]) ~= expectedType then
 				self:_postError(ERROR_MESSAGES.BAD_ROUTE(route.Path or tostring(route), name, typeof(route[name])))
 				return
 			end
 		end
 
-		resolve(route.Path, self.Routes)
+		resolve(route.Path, route, self.Routes)
 		if route[Fusion.Children] then
 			self:addRoutes(route[Fusion.Children], route.Path)
 		end
@@ -131,16 +132,17 @@ function Router:addRoutes(routes: Types.Routes, _prevPath: string?)
 end
 
 function Router:setRoute(route: Types.Route<string>, parameters: { [any]: any}, shouldInsert: boolean?)
+	if shouldInsert == nil then shouldInsert = true end
 	self._error.IsActive:set(false)
 	local duplicatedRoute = table.clone(route)
 	duplicatedRoute.Parameters = parameters
 	self.History[#self.History + 1] = duplicatedRoute
 	self.CurrentPage.Parameters = duplicatedRoute.Parameters or {}
 	self.CurrentPage.Parameters.Router = self
-	for _, name in in { "Path", "Page", "Data" } do
+	for _, name in pairs({ "Path", "Page", "Data" }) do
 		self.CurrentPage[name]:set(duplicatedRoute[name])
 	end
-	if not self.CurrentPage.Path:get() == route.Path or not shouldInsert then
+	if not self.CurrentPage.Path:get() == route.Path and shouldInsert then
 		table.insert(self.History, duplicatedRoute)
 	end
 end
@@ -159,6 +161,7 @@ function Router:back(steps: number?)
 end
 
 function Router:push(path: string, parameters: { [any]: any }?)
+	path ..= if path:sub(-1, -1) ~= "/" then "/" else ""
 	if not self:checkRoute(path) then
 		self:_postError(ERROR_MESSAGES.BAD_PATH(path))
 		return
@@ -167,7 +170,7 @@ function Router:push(path: string, parameters: { [any]: any }?)
 	local function resolve(path: string, node: Tree.Tree<Types.Route<string> | { ParameterName: string? }>)
 		local current, rest = parse(path)
 		local currentNode = node[Fusion.Children][current] or node[Fusion.Children][WILDCARD_PATH]
-		local isWildcard = currentNode == children[WILDCARD_PATH]
+		local isWildcard = currentNode == node[Fusion.Children][WILDCARD_PATH]
 		if currentNode then
 			if isWildcard then
 				parameters[currentNode.Value.ParameterName] = current
@@ -222,7 +225,7 @@ function Router:getRouterView(lifecycleFunction: (string, { [string]: any }) -> 
 			return
 		end
 	end
-	local disconnectPageStateCompat = Fusion.Observer(self.CurrentPage.Page):onChange(function()
+	local disconnectPageStateCompat = Fusion.Compat(self.CurrentPage.Page):onChange(function()
 		render()
 	end)
 	render()
